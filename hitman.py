@@ -41,6 +41,9 @@ tableau_element.append(cible)
 mur = "m"
 tableau_element.append(mur)
 
+garde = "g"
+tableau_element.append(garde)
+
 garde_nord = "gn"
 tableau_element.append(garde_nord)
 
@@ -52,6 +55,9 @@ tableau_element.append(garde_est)
 
 garde_ouest = "go"
 tableau_element.append(garde_ouest)
+
+civil = "ci"
+tableau_element.append(civil)
 
 civil_nord = "cn"
 tableau_element.append(civil_nord)
@@ -77,6 +83,7 @@ tableau_element.append(hitman_est)
 hitman_ouest = "ho"
 tableau_element.append(hitman_ouest)
 
+personnes = [civil, garde]
 
 nb_lignes = 5
 nb_colonnes = 8
@@ -112,6 +119,25 @@ def variable_to_cell(var : int) -> Tuple[int, int, str]:
         raise ValueError("Variable négative")
     
     return (int(tab_position_element[var][0]), int(tab_position_element[var][1]), tab_position_element[var][2])
+
+def ecoute(ligne : int, col : int, num : int) -> List[int]:
+    """
+    Renvoie toutes les clauses où les num personnes peuvent-être.
+    """
+    Possibilites = []
+    
+    for orientation in personnes:
+        Possibilites.append(cell_to_variable(ligne+1, col, orientation))
+        Possibilites.append(cell_to_variable(ligne-1, col, orientation))
+        Possibilites.append(cell_to_variable(ligne, col+1, orientation))
+        Possibilites.append(cell_to_variable(ligne, col-1, orientation))
+        Possibilites.append(cell_to_variable(ligne+1, col+1, orientation))
+        Possibilites.append(cell_to_variable(ligne+1, col-1, orientation))
+        Possibilites.append(cell_to_variable(ligne-1, col+1, orientation))
+        Possibilites.append(cell_to_variable(ligne-1, col-1, orientation))
+        
+    return Possibilites
+
 
     
 if __name__ == "__main__":
