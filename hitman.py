@@ -1,3 +1,7 @@
+# IMPORTS
+from typing import List, Tuple, Dict, Set, Optional
+
+
 """
 Map : List[List[str]]
     "r" : rien
@@ -20,28 +24,94 @@ Map : List[List[str]]
 
 
 """
+tableau_element = []
+
 rien = "r"
+tableau_element.append(rien)
+
 costume = "c"
+tableau_element.append(costume)
+
 corde = "k"
+tableau_element.append(corde)
+
 cible = "t"
+tableau_element.append(cible)
+
 mur = "m"
+tableau_element.append(mur)
+
 garde_nord = "gn"
+tableau_element.append(garde_nord)
+
 garde_sud = "gs"
+tableau_element.append(garde_sud)
+
 garde_est = "ge"
+tableau_element.append(garde_est)
+
 garde_ouest = "go"
+tableau_element.append(garde_ouest)
+
 civil_nord = "cn"
+tableau_element.append(civil_nord)
+
 civil_sud = "cs"
+tableau_element.append(civil_sud)
+
 civil_est = "ce"
+tableau_element.append(civil_est)
+
 civil_ouest = "co"
+tableau_element.append(civil_ouest)
+
 hitman_nord = "hn"
+tableau_element.append(hitman_nord)
+
 hitman_sud = "hs"
+tableau_element.append(hitman_sud)
+
 hitman_est = "he"
+tableau_element.append(hitman_est)
+
 hitman_ouest = "ho"
+tableau_element.append(hitman_ouest)
 
 
-def main():
-    print("HITMAN")
+nb_lignes = 5
+nb_colonnes = 8
 
+
+# Tableau contenant toutes les combinaisons possibles de position et d'éléments
+tab_position_element =[str(i) + str(j) + element for i in range(nb_lignes) for j in range(nb_colonnes) for element in tableau_element]
+
+# Dictionnaire qui pour toutes les combinaisons possibles donne un numéro
+dict_position_element = {tab_position_element[i]:i for i in range(len(tab_position_element))}
+
+def cell_to_variable(li : int, col : int, val : str) -> int:
+    """
+    Fonction qui pour une cellule donnée (ligne, colonne, valeur) renvoie le numéro de la variable correspondante
+    """
+    if li >= nb_lignes or col >= nb_colonnes:
+        raise ValueError("Ligne ou colonne trop grande")
+    if val not in tableau_element:
+        raise ValueError("Valeur non valide")
+    if li < 0 or col < 0:
+        raise ValueError("Ligne ou colonne négative")
+    
+    return dict_position_element[str(li) + str(col) + val]
+
+def variable_to_cell(var : int) -> Tuple[int, int, str]:
+    """
+    Fonction qui pour une variable donnée renvoie la cellule correspondante (ligne, colonne, valeur)
+    """
+    
+    if var >= len(tab_position_element):
+        raise ValueError("Variable trop grande")
+    if var < 0:
+        raise ValueError("Variable négative")
+    
+    return (int(tab_position_element[var][0]), int(tab_position_element[var][1]), tab_position_element[var][2])
 
     
 if __name__ == "__main__":
