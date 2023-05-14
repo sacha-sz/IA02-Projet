@@ -9,18 +9,9 @@ Map : List[List[str]]
     "k" : corde
     "t" : cible/target 
     "m" : mur
-    "gn" : garde nord
-    "gs" : garde sud
-    "ge" : garde est
-    "go" : garde ouest
-    "cn" : civil nord
-    "cs" : civil sud
-    "ce" : civil est
-    "co" : civil ouest
-    "hn" : hitman nord
-    "hs" : hitman sud
-    "he" : hitman est
-    "ho" : hitman ouest
+    "g" : garde
+    "p" : personne
+    "ci" : civil
 
 
 """
@@ -44,46 +35,9 @@ tableau_element.append(mur)
 garde = "g"
 tableau_element.append(garde)
 
-garde_nord = "gn"
-tableau_element.append(garde_nord)
-
-garde_sud = "gs"
-tableau_element.append(garde_sud)
-
-garde_est = "ge"
-tableau_element.append(garde_est)
-
-garde_ouest = "go"
-tableau_element.append(garde_ouest)
-
 civil = "ci"
-tableau_element.append(civil)
 
-civil_nord = "cn"
-tableau_element.append(civil_nord)
-
-civil_sud = "cs"
-tableau_element.append(civil_sud)
-
-civil_est = "ce"
-tableau_element.append(civil_est)
-
-civil_ouest = "co"
-tableau_element.append(civil_ouest)
-
-hitman_nord = "hn"
-tableau_element.append(hitman_nord)
-
-hitman_sud = "hs"
-tableau_element.append(hitman_sud)
-
-hitman_est = "he"
-tableau_element.append(hitman_est)
-
-hitman_ouest = "ho"
-tableau_element.append(hitman_ouest)
-
-personnes = [civil, garde]
+personne = "p" #p <==> g ou ci
 
 nb_lignes = 5
 nb_colonnes = 8
