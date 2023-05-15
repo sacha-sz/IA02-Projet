@@ -1,0 +1,9 @@
+c 
+c 
+c Ce fichier a ete genere automatiquement par le programme les_axiomes_universels.py
+c Il contient les axiomes universels pour le jeu Hitman
+c Il contient egalement les deductions ajoutees a chaque tour
+c Il correspond a un plateau de taille 20x20
+c 
+c 
+p cnf 400 0
