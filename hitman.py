@@ -36,6 +36,7 @@ garde = "g"
 tableau_element.append(garde)
 
 civil = "ci"
+tableau_element.append(garde)
 
 personne = "p" #p <==> g ou ci
 
@@ -44,7 +45,7 @@ nb_colonnes = 8
 
 
 # Tableau contenant toutes les combinaisons possibles de position et d'éléments
-tab_position_element =[str(i) + str(j) + element for i in range(nb_lignes) for j in range(nb_colonnes) for element in tableau_element]
+tab_position_element = [str(i) + str(j) + element for i in range(nb_lignes) for j in range(nb_colonnes) for element in tableau_element]
 
 # Dictionnaire qui pour toutes les combinaisons possibles donne un numéro
 dict_position_element = {tab_position_element[i]:i for i in range(len(tab_position_element))}
