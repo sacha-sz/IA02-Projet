@@ -19,6 +19,19 @@ MAX_VOISINS = 9
 LC = List[List[int]]
 LL = List[int]
 
+def comment_begin_file(Nom_fichier : str =FILENAME) -> None:
+    with open(Nom_fichier, 'w') as f:
+        f.write("c \n")
+        f.write("c \n")
+        f.write(
+            "c Ce fichier a ete genere automatiquement par le programme les_axiomes_universels.py\n")
+        f.write("c Il contient les axiomes universels pour le jeu Hitman\n")
+        f.write("c Il contient egalement les deductions ajoutees a chaque tour\n")
+        f.write("c Il correspond a un plateau de taille " +
+                str(dim_global[0])+"x"+str(dim_global[1])+"\n")
+        f.write("c \n")
+        f.write("c \n")
+
 
 def initialisation_fichier(N_lignes: int, N_colonnes: int, Nom_fichier: str = FILENAME) -> None:
     dim_global[0] = N_lignes
@@ -32,17 +45,9 @@ def initialisation_fichier(N_lignes: int, N_colonnes: int, Nom_fichier: str = FI
             dict_pers_inverse[index] = str(i)+str(j)
             index += 1
 
-    with open(Nom_fichier, 'w') as f:
-        f.write("c \n")
-        f.write("c \n")
-        f.write(
-            "c Ce fichier a ete genere automatiquement par le programme les_axiomes_universels.py\n")
-        f.write("c Il contient les axiomes universels pour le jeu Hitman\n")
-        f.write("c Il contient egalement les deductions ajoutees a chaque tour\n")
-        f.write("c Il correspond a un plateau de taille " +
-                str(N_lignes)+"x"+str(N_colonnes)+"\n")
-        f.write("c \n")
-        f.write("c \n")
+    comment_begin_file(Nom_fichier)
+
+    with open(Nom_fichier, 'a') as f:
         f.write("p cnf "+str(N_lignes*N_colonnes)+" 0\n")
 
     return None
@@ -105,8 +110,11 @@ def add_to_file(append_liste_clauses: LC, Nom_fichier: str = FILENAME) -> None:
         if clause not in liste_clauses_global:
             liste_clauses_global.append(clause)
 
+    comment_begin_file(Nom_fichier)
+    
     with open(Nom_fichier, 'a') as f:
-        for clause in append_liste_clauses:
+        f.write("p cnf "+str(dim_global[0]*dim_global[1])+" "+str(len(liste_clauses_global))+"\n")
+        for clause in liste_clauses_global:
             for literal in clause:
                 if literal > 0:
                     f.write(str(literal) + " ")
