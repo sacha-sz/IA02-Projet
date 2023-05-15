@@ -49,3 +49,5 @@ def exactly_n(n: int, liste: LL) -> LC:
 				clauses.append(cl)
 
 	return clauses
+
+# TODO : ajouter le at_least et le at_most

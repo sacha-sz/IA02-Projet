@@ -5,7 +5,7 @@ import les_contraintes_clausales_en_cavales as cc
 
 # Variables globales
 dim_global = [-1, -1]
-liste_clauses = []
+liste_clauses_global = []
 dict_pers = {}
 dict_pers_inverse = {}
 
@@ -78,8 +78,8 @@ def entendre_voisins(Indice_ligne: int, Indice_colonne: int, Nb_voisins: int, No
         liste_clauses = cc.exactly_n(Nb_voisins, liste_voisins)
     else:
         liste_clauses_temp = []
-        for nbn in range(BROUHAHA, MAX_VOISINS + 1):
-            liste_clauses_temp += cc.exactly_n(nbn, liste_voisins)
+        liste_clauses_temp = cc.at_least(BROUHAHA, liste_voisins)
+        liste_clauses_temp = cc.at_most(MAX_VOISINS, liste_voisins)
         
         liste_clauses = [x for x in liste_clauses_temp if x != [] and x not in liste_clauses] 
         
@@ -99,8 +99,12 @@ def modify_nb_clauses(new_nb : int, Nom_fichier: str = FILENAME) -> None:
 
 def add_to_file(append_liste_clauses: LC, Nom_fichier: str = FILENAME) -> None:
     # Ajoute les clauses à la liste globale des clauses et les écrit dans le fichier
-    modify_nb_clauses(len(liste_clauses) + len(append_liste_clauses), Nom_fichier)
-    
+    modify_nb_clauses(len(liste_clauses_global) + len(append_liste_clauses), Nom_fichier)
+
+    for clause in append_liste_clauses:
+        if clause not in liste_clauses_global:
+            liste_clauses_global.append(clause)
+
     with open(Nom_fichier, 'a') as f:
         for clause in append_liste_clauses:
             for literal in clause:
@@ -115,8 +119,13 @@ def add_to_file(append_liste_clauses: LC, Nom_fichier: str = FILENAME) -> None:
 
 def main():
     initialisation_fichier(3, 3)
-    vois = entendre_voisins(1, 1, 9)
-    print(vois)
+    vois = entendre_voisins(0, 0, 1)
+    add_to_file(vois)
+    vois = entendre_voisins(1, 0, 1)
+    add_to_file(vois)
+    vois = entendre_voisins(1, 1, 2)
+    add_to_file(vois)
+    vois = entendre_voisins(2, 1, 1)
     add_to_file(vois)
     
     return None
