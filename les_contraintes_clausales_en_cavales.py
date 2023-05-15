@@ -1,31 +1,51 @@
 from typing import List
 from itertools import combinations
 
-Clause = List[int]
+# Type alias pour les listes de clauses
+LC = List[List[int]]
 
-#retourne l'ensemble de clause traitant la contrainte : "au moins n variables vraies dans la liste"
-def at_least_n(n: int, vars: List[int]) -> List[Clause]:
+# Type alias pour les listes de litteraux
+LL = List[int]
+
+# Fonctions de base
+def transform_to_negatif(liste: LL) -> LL:
+	return [-x for x in liste]
+
+def transform_to_positif(liste: LL) -> LL:
+	return [abs(x) for x in liste]
+
+# Fonctions combinant les litteraux
+def exactly_n(n: int, liste: LL) -> LC:
+	if n > len(liste):
+		raise ValueError("n doit etre inferieur ou egal a la taille de la liste")
+
+	if n == len(liste):
+		return [liste]	
+	elif n == 0:
+		return [[-x] for x in liste]
+
+	litteraux_negatifs = []
+	litteraux_positifs = []
 	clauses = []
-	for c in combinations(vars, len(vars) -(n-1)):
-		clauses.append(list(c))
-	return clauses
 
-#retourne l'ensemble de clause traitant la contrainte : "au plus n variables vraies dans la liste"
-def at_most_n(n: int, vars: List[int]) -> List[Clause]:
-	clauses = []
-	varsNeg = [i * -1 for i in vars]
-	for c in combinations(varsNeg, n+1):
-		clauses.append(list(c))
-	return clauses
+	for comb in combinations(liste, n):
+		litteraux_positifs.append(list(comb))
+		litteraux_negatifs.append([-x for x in liste if x not in list(comb)])
 
-#retourne l'ensemble de clause traitant la contrainte : "exactement n variables vraies dans la liste"
-def exactly_n(n: int, vars: List[int]) -> List[Clause]:
-	if vars == []:
-		return []
-	if n==0:
-		return at_most_n(0, vars)
-	if n==len(vars):
-		return at_least_n(n, vars)
-	clauses = at_most_n(n, vars)
-	clauses += at_least_n(n, vars)
+	for i in range(len(litteraux_negatifs)):
+		neg = transform_to_negatif(litteraux_positifs[i])
+		for litteral in litteraux_negatifs[i]:
+			cl = neg + [litteral]
+			cl.sort()	
+			if cl not in clauses:
+				clauses.append(cl)
+
+	for i in range(len(litteraux_positifs)):
+		pos = transform_to_positif(litteraux_negatifs[i]) 
+		for litteral in litteraux_positifs[i]:
+			cl = pos + [litteral]
+			cl.sort()
+			if cl not in clauses:
+				clauses.append(cl)
+
 	return clauses

@@ -6,18 +6,31 @@ import les_contraintes_clausales_en_cavales as cc
 # Variables globales
 dim_global = [-1, -1]
 liste_clauses = []
+dict_pers = {}
+dict_pers_inverse = {}
+
 
 # Constantes
 FILENAME = "hitman.cnf"
 BROUHAHA = 6
 MAX_VOISINS = 9
 
-# Fonctions
+# Types alias
+LC = List[List[int]]
+LL = List[int]
 
 
 def initialisation_fichier(N_lignes: int, N_colonnes: int, Nom_fichier: str = FILENAME) -> None:
     dim_global[0] = N_lignes
     dim_global[1] = N_colonnes
+
+    # On ajoute les axiomes universels
+    index = 1
+    for i in range(N_lignes):
+        for j in range(N_colonnes):
+            dict_pers[str(i)+str(j)] = index
+            dict_pers_inverse[index] = str(i)+str(j)
+            index += 1
 
     with open(Nom_fichier, 'w') as f:
         f.write("c \n")
@@ -35,7 +48,7 @@ def initialisation_fichier(N_lignes: int, N_colonnes: int, Nom_fichier: str = FI
     return None
 
 
-def generate_neighboors(Indice_ligne: int, Indice_colonne: int) -> List[List[int]]:
+def generate_neighboors(Indice_ligne: int, Indice_colonne: int) -> LC:
     """
     Fonction qui genere les voisins d'une case donnee
     """
@@ -55,28 +68,57 @@ def generate_neighboors(Indice_ligne: int, Indice_colonne: int) -> List[List[int
 
 def entendre_voisins(Indice_ligne: int, Indice_colonne: int, Nb_voisins: int, Nom_fichier: str = FILENAME) -> None:
     liste_voisins = generate_neighboors(Indice_ligne, Indice_colonne)
-    
-    print(liste_voisins)
-    for i in range(len(liste_voisins)):
-        liste_voisins[i] = str(liste_voisins[i][0]) + str(liste_voisins[i][1])
-    
-    print(liste_voisins)
-    
     liste_clauses = []
+    
+    for i in range(len(liste_voisins)):
+        liste_voisins[i] = dict_pers[str(liste_voisins[i][0]) + str(liste_voisins[i][1])]
 
     # Génération des combinaisons de taille Nb_voisins parmi les voisins
     if Nb_voisins <= 5:
         liste_clauses = cc.exactly_n(Nb_voisins, liste_voisins)
     else:
+        liste_clauses_temp = []
         for nbn in range(BROUHAHA, MAX_VOISINS + 1):
-            liste_clauses += cc.exactly_n(nbn, liste_voisins)
-
+            liste_clauses_temp += cc.exactly_n(nbn, liste_voisins)
+        
+        liste_clauses = [x for x in liste_clauses_temp if x != [] and x not in liste_clauses] 
+        
     return liste_clauses
 
 
+def modify_nb_clauses(new_nb : int, Nom_fichier: str = FILENAME) -> None:
+    with open(Nom_fichier, 'r') as f:
+        lines = f.readlines()
+        
+    with open(Nom_fichier, 'w') as f:
+        for line in lines:
+            if line.startswith("p cnf"):
+                line = "p cnf " + str(dim_global[0]*dim_global[1]) + " " + str(new_nb) + "\n"
+            f.write(line)
+
+
+def add_to_file(append_liste_clauses: LC, Nom_fichier: str = FILENAME) -> None:
+    # Ajoute les clauses à la liste globale des clauses et les écrit dans le fichier
+    modify_nb_clauses(len(liste_clauses) + len(append_liste_clauses), Nom_fichier)
+    
+    with open(Nom_fichier, 'a') as f:
+        for clause in append_liste_clauses:
+            for literal in clause:
+                if literal > 0:
+                    f.write(str(literal) + " ")
+                else:
+                    f.write("-" + str(-literal) + " ")
+            f.write("0\n")
+    
+    return None
+
+
 def main():
-    initialisation_fichier(20, 20)
-    print(entendre_voisins(1, 1, 0))
+    initialisation_fichier(3, 3)
+    vois = entendre_voisins(1, 1, 9)
+    print(vois)
+    add_to_file(vois)
+    
     return None
 
 
