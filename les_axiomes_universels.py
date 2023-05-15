@@ -125,6 +125,13 @@ def add_to_file(append_liste_clauses: LC, Nom_fichier: str = FILENAME) -> None:
     return None
 
 
+def vision(Indice_ligne: int, Indice_colonne: int, P : bool, Nom_fichier: str = FILENAME) -> None:
+    if P:
+        add_to_file([[dict_pers[str(Indice_ligne)+str(Indice_colonne)]]], Nom_fichier)
+    else:
+        add_to_file([[-dict_pers[str(Indice_ligne)+str(Indice_colonne)]]], Nom_fichier)
+
+
 def main():
     initialisation_fichier(3, 3)
     vois = entendre_voisins(0, 0, 1)
