@@ -18,6 +18,9 @@ def transform_to_positif(liste: LL) -> LL:
 def exactly_n(n: int, liste: LL) -> LC:
 	if n > len(liste):
 		raise ValueError("n doit etre inferieur ou egal a la taille de la liste")
+	
+	if n > 5:
+		raise ValueError("n doit etre inferieur ou egal a 5. utilisez at_least et at_most")
 
 	if n == len(liste):
 		return [liste]	
@@ -51,3 +54,23 @@ def exactly_n(n: int, liste: LL) -> LC:
 	return clauses
 
 # TODO : ajouter le at_least et le at_most
+def at_least(n: int, liste: LL) -> LC:
+	if n > len(liste):
+		raise ValueError("n doit etre inferieur ou egal a la taille de la liste")
+		
+	
+
+	clauses = []
+	#clauses += exactly_n(6, liste)
+	#LL_negatif = transform_to_negatif(liste)
+	for comb in combinations(liste,len(liste)-(n-1)):
+		clauses.append(comb)
+	return clauses
+
+def at_most(n: int, liste: LL) -> LC:
+	if n == 9:
+		return [[elt] for elt in liste]
+	clauses = []
+	liste_neg = transform_to_negatif(liste)
+	for comb in combinations(liste_neg,n+1): #Ne fonctionne que si n < len(liste)
+		clauses.append(comb)

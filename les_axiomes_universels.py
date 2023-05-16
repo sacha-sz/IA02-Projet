@@ -81,10 +81,11 @@ def entendre_voisins(Indice_ligne: int, Indice_colonne: int, Nb_voisins: int, No
     # Génération des combinaisons de taille Nb_voisins parmi les voisins
     if Nb_voisins <= 5:
         liste_clauses = cc.exactly_n(Nb_voisins, liste_voisins)
+        #listes_clauses = cc.at_least(Nb_voisins, liste_voisins)
+        #listes_clauses = cc.at_most(Nb_voisins, liste_voisins)
     else:
-        liste_clauses_temp = []
         liste_clauses_temp = cc.at_least(BROUHAHA, liste_voisins)
-        liste_clauses_temp = cc.at_most(MAX_VOISINS, liste_voisins)
+        liste_clauses_temp.extend(cc.at_most(MAX_VOISINS, liste_voisins))
         
         liste_clauses = [x for x in liste_clauses_temp if x != [] and x not in liste_clauses] 
         
