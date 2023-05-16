@@ -1,8 +1,7 @@
-<<<<<<< HEAD
 class Hitman:
-    def __init__(self, n_lignes, n_colonnes, pos_ligne, pos_colonnes, son_nom="GROS ZIZI"):
-        self.max_L = n_lignes - 1
-        self.max_C = n_colonnes - 1
+    def __init__(self, n_lignes, n_colonnes, pos_ligne, pos_colonnes, son_nom="Hitman, l'agent 47"):
+        self.max_L = n_lignes
+        self.max_C = n_colonnes 
         self.x = pos_ligne
         self.y = pos_colonnes
         self.name = son_nom
@@ -10,35 +9,81 @@ class Hitman:
         self.mat_regard = [[0 for i in range(self.max_C)] for j in range(self.max_L)]
         
     def __str__(self):
-        chaine = "-------------------\n"
+        chaine = "-" * 36 + "-" * max(self.max_C - 32, 0) * 2 + "\n"
         chaine += "Je suis \"" + self.name + "\"\n"
         chaine += "Je suis en (" + str(self.x) + ", " + str(self.y) + ")\n"
-        chaine += "Je connais la matrice suivante : \n"
+        chaine += "\nJe connais la matrice suivante :\n"
         for i in range(self.max_L):
             for j in range(self.max_C):
-                chaine += str(self.mat_connue[i][j]) + " "
+                chaine += " "* min(3-len(self.mat_connue[i][j]), 2) + self.mat_connue[i][j] 
             chaine += "\n"
-        chaine += "-------------------\n"
-        return chaines
+            
+        chaine += "\nLa matrice des regards est : \n"
+        for i in range(self.max_L):
+            for j in range(self.max_C):
+                chaine += "  " + str(self.mat_regard[i][j])
+            chaine += "\n"
+        chaine += "-" * 36 + "-" * max(self.max_C - 32, 0) * 2 + "\n"
+        return chaine
+    
+    def check_coord(self, ligne, colonne):
+        if  0 <= ligne and ligne < self.max_L and 0 <= colonne and colonne < self.max_C:
+            return True
+        else:
+            return False
+    
+    def translate_ligne(self, ligne):
+        return self.max_L - 1 - ligne
     
     def ajout_info_mat(self, ligne, colonne, info):
-        if  1 <= ligne and ligne <= self.max_L and 1 <= colonne and colonne <= self.max_C:
+        ligne = self.translate_ligne(ligne)
+        if  self.check_coord(ligne, colonne):
             self.mat_connue[ligne][colonne] = info
+
+            # Si garde on ajoute sa vision
+            if info.startswith("G"):
+                self.add_vision_garde(ligne, colonne)
+            
+            if not info.starswith("E"):
+                self.mat_regard[ligne][colonne] = 0
         else:
             print("Erreur : les coordonnées sont hors de la matrice")
             print("Aucune information n'a été ajoutée")
     
-    def get_vision_garde(self, ligne, colonne):
-        if  1 <= ligne and ligne <= self.max_L and 1 <= colonne and colonne <= self.max_C:
-            if self.mat_connue[ligne][colonne].endswith("N"):
+    def add_vision_garde(self, ligne, colonne):
+        if  self.check_coord(ligne, colonne):
+            if self.mat_connue[ligne][colonne].endswith("S"):
                 for i in range(1, 3):
-                    if ligne - i <= self.max_L:
+                    if ligne + i < self.max_L:
                         self.mat_regard[ligne + i][colonne] += 1
-            elif self.mat_connue[
+            elif self.mat_connue[ligne][colonne].endswith("N"):
+                for i in range(1, 3):
+                    if ligne - i >= 0:
+                        self.mat_regard[ligne - i][colonne] += 1
+            elif self.mat_connue[ligne][colonne].endswith("E"):
+                for i in range(1, 3):
+                    if colonne + i < self.max_C:
+                        self.mat_regard[ligne][colonne + i] += 1
+            elif self.mat_connue[ligne][colonne].endswith("O"):
+                for i in range(1, 3):
+                    if colonne - i >= 0:
+                        self.mat_regard[ligne][colonne - i] += 1
+            else:
+                print("Ce n'est pas un garde qui est en (" + str(ligne) + ", " + str(colonne) + ")")
+        else:
+            print("Erreur : les coordonnées sont hors de la matrice")
+            print("Aucune information n'a été ajoutée")
     
         
 def main():
-    Hitman1 = Hitman(10, 10, 5, 5)
+    Hitman1 = Hitman(3, 3, 0, 0)
+    print(Hitman1)
+    Hitman1.ajout_info_mat(1, 1, "GN")
+    print(Hitman1)
+    Hitman1.ajout_info_mat(2, 0, "GE")
+    print(Hitman1)
+    Hitman1.ajout_info_mat(2, 1, "GO")
+    
     print(Hitman1)
 
 if __name__ == "__main__":
