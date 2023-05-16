@@ -13,7 +13,8 @@ dict_pers_inverse = {}
 # Constantes
 FILENAME = "hitman.cnf"
 BROUHAHA = 6
-MAX_VOISINS = 9
+MAX_VOISINS = 25
+MAX_OUIE = 2
 
 # Types alias
 LC = List[List[int]]
@@ -59,8 +60,8 @@ def generate_neighboors(Indice_ligne: int, Indice_colonne: int) -> LC:
     """
     liste_voisins = []
 
-    for change_ligne in [-1, 0, 1]:
-        for change_col in [-1, 0, 1]:
+    for change_ligne in range(-MAX_VOISINS, MAX_VOISINS+1):
+        for change_col in range(-MAX_VOISINS, MAX_VOISINS+1):
             if Indice_ligne + change_ligne < 0 or Indice_ligne + change_ligne >= dim_global[0]:
                 continue
             if Indice_colonne + change_col < 0 or Indice_colonne + change_col >= dim_global[1]:
@@ -71,7 +72,7 @@ def generate_neighboors(Indice_ligne: int, Indice_colonne: int) -> LC:
     return liste_voisins
 
 
-def entendre_voisins(Indice_ligne: int, Indice_colonne: int, Nb_voisins: int, Nom_fichier: str = FILENAME) -> None:
+def entendre_voisins(Indice_ligne: int, Indice_colonne: int, Nb_voisins: int) -> LC:
     liste_voisins = generate_neighboors(Indice_ligne, Indice_colonne)
     liste_clauses = []
     
@@ -79,15 +80,11 @@ def entendre_voisins(Indice_ligne: int, Indice_colonne: int, Nb_voisins: int, No
         liste_voisins[i] = dict_pers[str(liste_voisins[i][0]) + str(liste_voisins[i][1])]
 
     # Génération des combinaisons de taille Nb_voisins parmi les voisins
-    if Nb_voisins <= 5:
-        liste_clauses = cc.exactly_n(Nb_voisins, liste_voisins)
-    else:
-        liste_clauses_temp = []
-        liste_clauses_temp = cc.at_least(BROUHAHA, liste_voisins)
-        liste_clauses_temp = cc.at_most(MAX_VOISINS, liste_voisins)
-        
-        liste_clauses = [x for x in liste_clauses_temp if x != [] and x not in liste_clauses] 
-        
+    # Suppose que l'on connait précisément le nombre de voisins
+    liste_clauses = cc.exactly_n(Nb_voisins, liste_voisins)
+    
+    print(liste_clauses)
+    
     return liste_clauses
 
 
@@ -133,16 +130,12 @@ def vision(Indice_ligne: int, Indice_colonne: int, P : bool, Nom_fichier: str = 
 
 
 def main():
-    initialisation_fichier(3, 3)
-    vois = entendre_voisins(0, 0, 1)
-    add_to_file(vois)
-    vois = entendre_voisins(1, 0, 1)
-    add_to_file(vois)
-    vois = entendre_voisins(1, 1, 2)
-    add_to_file(vois)
-    vois = entendre_voisins(2, 1, 1)
-    add_to_file(vois)
-    
+    initialisation_fichier(4, 4)
+    add_to_file(entendre_voisins(0, 0, 2))
+    vision(0, 0, True)
+    vision(0, 1, False)
+    vision(0, 2, False)
+    vision(0, 3, False)
     return None
 
 
