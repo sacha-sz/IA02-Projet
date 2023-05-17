@@ -2,16 +2,40 @@ class Hitman:
     def __init__(self, n_lignes, n_colonnes, pos_ligne, pos_colonnes, son_nom="Hitman, l'agent 47"):
         self.max_L = n_lignes
         self.max_C = n_colonnes 
-        self.x = pos_ligne
-        self.y = pos_colonnes
+        self._x = pos_ligne
+        self._y = pos_colonnes
         self.name = son_nom
         self.mat_connue = [["X" for i in range(self.max_C)] for j in range(self.max_L)]
         self.mat_regard = [[0 for i in range(self.max_C)] for j in range(self.max_L)]
+
+    @property
+    def x(self):
+        return self._x
+    
+    @x.setter
+    def x(self, new_x):
+        if 0 <= new_x and new_x < self.max_L:
+            self._x = new_x
+        else:
+            print("Erreur : la coordonnée en x est hors de la matrice")
+            print("La coordonnée n'a pas été modifiée")
+
+    @property
+    def y(self):
+        return self._y
+    
+    @y.setter
+    def y(self, new_y):
+        if 0 <= new_y and new_y < self.max_C:
+            self._y = new_y
+        else:
+            print("Erreur : la coordonnée en y est hors de la matrice")
+            print("La coordonnée n'a pas été modifiée")
         
     def __str__(self):
         chaine = "-" * 36 + "-" * max(self.max_C - 32, 0) * 2 + "\n"
         chaine += "Je suis \"" + self.name + "\"\n"
-        chaine += "Je suis en (" + str(self.x) + ", " + str(self.y) + ")\n"
+        chaine += "Je suis en (" + str(self._x) + ", " + str(self._y) + ")\n"
         chaine += "\nJe connais la matrice suivante :\n"
         for i in range(self.max_L):
             for j in range(self.max_C):

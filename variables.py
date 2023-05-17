@@ -11,7 +11,7 @@ dict_pers_inverse = {}
 # Constantes
 FILENAME = "hitman.cnf"
 BROUHAHA = 6
-MAX_VOISINS = 9
+MAX_VOISINS = 25
 MAX_OUIE = 2
 
 # Types alias

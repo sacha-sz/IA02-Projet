@@ -63,9 +63,11 @@ def entendre_voisins(Indice_ligne: int, Indice_colonne: int, Nb_voisins: int) ->
     for i in range(len(liste_voisins)):
         liste_voisins[i] = dict_pers[str(liste_voisins[i][0]) + str(liste_voisins[i][1])]
 
-    liste_clauses += cc.exactly_n(Nb_voisins, liste_voisins)
-        
-    return liste_clauses
+    #liste_clauses += cc.exactly_n(Nb_voisins, liste_voisins)
+    if Nb_voisins < BROUHAHA:
+        return cc.exactly(Nb_voisins, liste_voisins)
+    
+    return cc.at_least(BROUHAHA, liste_voisins) + cc.at_most(MAX_VOISINS, liste_voisins)
 
 
 def modify_nb_clauses(new_nb : int, Nom_fichier: str = FILENAME) -> None:
