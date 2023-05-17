@@ -1,5 +1,6 @@
 from typing import List
 from itertools import combinations
+from variables import *
 
 # Type alias pour les listes de clauses
 LC = List[List[int]]
@@ -68,9 +69,27 @@ def at_least(n: int, liste: LL) -> LC:
 	return clauses
 
 def at_most(n: int, liste: LL) -> LC:
-	if n == 9:
-		return [[elt] for elt in liste]
+	
 	clauses = []
 	liste_neg = transform_to_negatif(liste)
 	for comb in combinations(liste_neg,n+1): #Ne fonctionne que si n < len(liste)
 		clauses.append(comb)
+
+	return clauses
+
+
+def exactly(n : int, liste: LL) -> LC:
+	if liste == []:
+		return []
+	if n == 0:
+		return at_most(0, liste)
+	if n == len(liste):
+		print("max ")
+		return at_least(n, liste)
+	
+	if n < BROUHAHA:
+		return at_least(n, liste) + at_most(n, liste)
+	
+	
+
+	

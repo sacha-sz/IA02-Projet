@@ -2,23 +2,7 @@
 from typing import List, Tuple, Dict, Set
 from itertools import combinations
 import les_contraintes_clausales_en_cavales as cc
-
-# Variables globales
-dim_global = [-1, -1]
-liste_clauses_global = []
-dict_pers = {}
-dict_pers_inverse = {}
-
-
-# Constantes
-FILENAME = "hitman.cnf"
-BROUHAHA = 6
-MAX_VOISINS = 25
-MAX_OUIE = 2
-
-# Types alias
-LC = List[List[int]]
-LL = List[int]
+from variables import *
 
 def comment_begin_file(Nom_fichier : str =FILENAME) -> None:
     with open(Nom_fichier, 'w') as f:

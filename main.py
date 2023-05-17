@@ -1,8 +1,17 @@
 import les_contraintes_clausales_en_cavales as cc
 import les_axiomes_universels as au
+from hitman import Hitman
 
 def main():
-    res = au.entendre_voisins(3,3,6)
-    print(res)
+    Hitman1 = Hitman(3, 3, 0, 0)
+    print(Hitman1)
+    Hitman1.ajout_info_mat(1, 1, "GN")
+    print(Hitman1)
+    Hitman1.ajout_info_mat(2, 0, "GE")
+    print(Hitman1)
+    Hitman1.ajout_info_mat(2, 1, "GO")
+    
+    print(Hitman1)
 
-main()
+if __name__ == "__main__":
+    main()
