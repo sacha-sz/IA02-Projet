@@ -9,7 +9,7 @@ dict_pers_inverse = {}
 
 
 # Constantes
-FILENAME = "hitman.cnf"
+FILENAME = "hitman_test.cnf"
 BROUHAHA = 6
 MAX_VOISINS = 25
 MAX_OUIE = 2

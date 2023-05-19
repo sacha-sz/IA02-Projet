@@ -3,6 +3,8 @@ from typing import List, Tuple, Dict, Set
 from itertools import combinations
 import les_contraintes_clausales_en_cavales as cc
 from variables import *
+import time
+start_time = time.time()
 
 def comment_begin_file(Nom_fichier : str =FILENAME) -> None:
     with open(Nom_fichier, 'w') as f:
@@ -44,15 +46,15 @@ def generate_neighboors(Indice_ligne: int, Indice_colonne: int) -> LC:
     """
     liste_voisins = []
 
-    for change_ligne in range(-MAX_VOISINS, MAX_VOISINS+1):
-        for change_col in range(-MAX_VOISINS, MAX_VOISINS+1):
+    for change_ligne in range(-MAX_OUIE, MAX_OUIE+1):
+        for change_col in range(-MAX_OUIE, MAX_OUIE+1):
             if Indice_ligne + change_ligne < 0 or Indice_ligne + change_ligne >= dim_global[0]:
                 continue
             if Indice_colonne + change_col < 0 or Indice_colonne + change_col >= dim_global[1]:
                 continue
             liste_voisins.append(
                 [Indice_ligne + change_ligne, Indice_colonne + change_col])
-
+    #print(liste_voisins)
     return liste_voisins
 
 
@@ -112,12 +114,47 @@ def vision(Indice_ligne: int, Indice_colonne: int, P : bool, Nom_fichier: str = 
 
 
 def main():
-    initialisation_fichier(4, 4)
-    add_to_file(entendre_voisins(0, 0, 2))
-    vision(0, 0, True)
-    vision(0, 1, False)
-    vision(0, 2, False)
-    vision(0, 3, False)
+    initialisation_fichier(9,9)
+    add_to_file(entendre_voisins(0, 0, 0))
+    add_to_file(entendre_voisins(1, 0, 1))
+    add_to_file(entendre_voisins(2, 0, 3))
+    add_to_file(entendre_voisins(3, 0, 5))
+    add_to_file(entendre_voisins(4, 0, 7))
+    add_to_file(entendre_voisins(5, 0, 7))
+    add_to_file(entendre_voisins(6, 0, 6))
+    add_to_file(entendre_voisins(7, 0, 4))
+    add_to_file(entendre_voisins(8, 0, 2))
+    add_to_file(entendre_voisins(8, 1, 2))
+    add_to_file(entendre_voisins(8, 2, 2))
+    add_to_file(entendre_voisins(8, 3, 2))
+    add_to_file(entendre_voisins(8, 4, 1))
+    add_to_file(entendre_voisins(8, 5, 0))
+    add_to_file(entendre_voisins(8, 6, 0))
+    add_to_file(entendre_voisins(8, 7, 0))
+    add_to_file(entendre_voisins(8, 8, 0))
+    add_to_file(entendre_voisins(7, 8, 0))
+    add_to_file(entendre_voisins(6, 8, 0))
+    add_to_file(entendre_voisins(5, 8, 0))
+    add_to_file(entendre_voisins(4, 8, 0))
+    add_to_file(entendre_voisins(3, 8, 0))
+    add_to_file(entendre_voisins(2, 8, 0))
+    add_to_file(entendre_voisins(1, 8, 0))
+    add_to_file(entendre_voisins(0, 8, 0))
+    add_to_file(entendre_voisins(0, 7, 0))
+    add_to_file(entendre_voisins(0, 6, 0))
+    add_to_file(entendre_voisins(0, 5, 0))
+    add_to_file(entendre_voisins(0, 4, 0))
+    add_to_file(entendre_voisins(0, 3, 0))
+    add_to_file(entendre_voisins(1, 3, 1))
+    add_to_file(entendre_voisins(2, 3, 3))
+    add_to_file(entendre_voisins(3, 3, 5))
+    add_to_file(entendre_voisins(4, 3, 7))
+    add_to_file(entendre_voisins(5, 3, 7))
+    add_to_file(entendre_voisins(6, 3, 6))
+    #vision(0, 0, True)
+    #vision(0, 1, False)
+    #vision(0, 2, False)
+    #vision(0, 3, False)
     return None
 
 
@@ -125,3 +162,10 @@ if __name__ == "__main__":
     print("Debut du programme")
     main()
     print("Fin du programme")
+    end_time = time.time()
+
+    # Calculate the elapsed time
+    elapsed_time = end_time - start_time
+
+    # Print the result
+    print(f"The code took {elapsed_time} seconds to run.")
