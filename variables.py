@@ -13,6 +13,9 @@ FILENAME = "hitman_test.cnf"
 BROUHAHA = 6
 MAX_VOISINS = 25
 MAX_OUIE = 2
+MAX_VISION_GARDE = 2
+
+empty = "E"
 
 # Types alias
 LC = List[List[int]]

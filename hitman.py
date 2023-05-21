@@ -1,3 +1,6 @@
+from variables import *
+
+
 class Hitman:
     def __init__(self, n_lignes, n_colonnes, pos_ligne, pos_colonnes, son_nom="Hitman, l'agent 47"):
         self.max_L = n_lignes
@@ -68,7 +71,7 @@ class Hitman:
             if info.startswith("G"):
                 self.add_vision_garde(ligne, colonne)
             
-            if not info.starswith("E"):
+            if not info.startswith("E"):
                 self.mat_regard[ligne][colonne] = 0
         else:
             print("Erreur : les coordonnées sont hors de la matrice")
@@ -97,13 +100,63 @@ class Hitman:
         else:
             print("Erreur : les coordonnées sont hors de la matrice")
             print("Aucune information n'a été ajoutée")
-    
+        self.verif_vision()
+    def verif_vision(self):
+        """
+        Si un garde a un objet/mur/personne devant lui, son champ 
+        de vision doit être réduit.
+        
+        """
+
+        for i in range(self.max_L):
+            for j in range(self.max_C):
+                if self.mat_connue[i][j].startswith("G"):
+                    vision_bloque = False
+                    if self.mat_connue[i][j].endswith("S"):
+                        for v in range(1, MAX_VISION_GARDE+1):
+                            if i + v < self.max_L:
+                                if vision_bloque:
+                                    self.mat_regard[i + v][j] = 0
+                                if self.mat_connue[i + v][j] != empty and self.mat_connue[i + v][j] != "X":
+                                    vision_bloque = True
+                                     
+                        
+                    elif self.mat_connue[i][j].endswith("N"):
+                        for v in range(1, MAX_VISION_GARDE+1):
+                            if i - v >= 0:
+                                if vision_bloque:
+                                    self.mat_regard[i - v][j] = 0
+                                if self.mat_connue[i - v][j] != empty and self.mat_connue[i - v][j] != "X":
+                                    vision_bloque = True
+                        
+                    elif self.mat_connue[i][j].endswith("E"):
+                        for v in range(1, MAX_VISION_GARDE+1):
+                            if j + v < self.max_C:
+                                if vision_bloque:
+                                    self.mat_regard[i][j + v] = 0
+                                if self.mat_connue[i][j + v] != empty and self.mat_connue[i][j + v] != "X":
+                                    vision_bloque = True
+                        
+                    elif self.mat_connue[i][j].endswith("O"):
+                        for v in range(1, MAX_VISION_GARDE+1):
+                            
+                            if j - v >= 0:
+                                #print(i, j-v,self.mat_connue[i][j - v])
+                                if vision_bloque:
+                                    self.mat_regard[i][j - v] = 0
+                                if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != "X":
+                                    vision_bloque = True
+                                    self.mat_regard[i][j - v] = 0
+                        
+                    else:
+                        print("Erreur : le garde en (" + str(i) + ", " + str(j) + ") n'a pas de direction")
         
 def main():
     Hitman1 = Hitman(3, 3, 0, 0)
     print(Hitman1)
     Hitman1.ajout_info_mat(1, 1, "GN")
     print(Hitman1)
+
     Hitman1.ajout_info_mat(2, 0, "GE")
     print(Hitman1)
     Hitman1.ajout_info_mat(2, 1, "GO")
