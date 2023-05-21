@@ -101,6 +101,7 @@ class Hitman:
             print("Erreur : les coordonnées sont hors de la matrice")
             print("Aucune information n'a été ajoutée")
         self.verif_vision()
+
     def verif_vision(self):
         """
         Si un garde a un objet/mur/personne devant lui, son champ 
@@ -115,37 +116,47 @@ class Hitman:
                     if self.mat_connue[i][j].endswith("S"):
                         for v in range(1, MAX_VISION_GARDE+1):
                             if i + v < self.max_L:
-                                if vision_bloque:
-                                    self.mat_regard[i + v][j] = 0
+                                
                                 if self.mat_connue[i + v][j] != empty and self.mat_connue[i + v][j] != "X":
                                     vision_bloque = True
+
+                                if vision_bloque:
+                                    self.mat_regard[i + v][j] = 0
                                      
                         
                     elif self.mat_connue[i][j].endswith("N"):
                         for v in range(1, MAX_VISION_GARDE+1):
                             if i - v >= 0:
-                                if vision_bloque:
-                                    self.mat_regard[i - v][j] = 0
+                                
                                 if self.mat_connue[i - v][j] != empty and self.mat_connue[i - v][j] != "X":
                                     vision_bloque = True
+                                    
+
+                                if vision_bloque:
+                                    self.mat_regard[i - v][j] = 0
                         
                     elif self.mat_connue[i][j].endswith("E"):
                         for v in range(1, MAX_VISION_GARDE+1):
                             if j + v < self.max_C:
-                                if vision_bloque:
-                                    self.mat_regard[i][j + v] = 0
+                                
                                 if self.mat_connue[i][j + v] != empty and self.mat_connue[i][j + v] != "X":
                                     vision_bloque = True
+                                    
+
+                                if vision_bloque:
+                                    self.mat_regard[i][j + v] = 0
                         
                     elif self.mat_connue[i][j].endswith("O"):
                         for v in range(1, MAX_VISION_GARDE+1):
                             
                             if j - v >= 0:
                                 #print(i, j-v,self.mat_connue[i][j - v])
-                                if vision_bloque:
-                                    self.mat_regard[i][j - v] = 0
+                                
                                 if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != "X":
                                     vision_bloque = True
+                                    
+
+                                if vision_bloque:
                                     self.mat_regard[i][j - v] = 0
                         
                     else:
@@ -161,6 +172,10 @@ def main():
     print(Hitman1)
     Hitman1.ajout_info_mat(2, 1, "GO")
     
+    
+    print(Hitman1)
+
+    Hitman1.ajout_info_mat(2, 2, "GS")
     print(Hitman1)
 
 if __name__ == "__main__":
