@@ -24,6 +24,7 @@ Garde = "G"
 Invite = "I"
 Personne = "P"
 Safe = "OK"
+MV = "MV"
 
 GardeNord = "GN"
 GardeSud = "GS"
@@ -33,6 +34,7 @@ InviteNord = "IN"
 InviteSud = "IS"
 InviteEst = "IE"
 InviteOuest = "IO"
+Visited = "V"
 
 # Types alias
 LC = List[List[int]]
