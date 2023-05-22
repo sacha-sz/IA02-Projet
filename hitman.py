@@ -2,12 +2,18 @@ from variables import *
 
 
 class Hitman:
-    def __init__(self, n_lignes, n_colonnes, pos_ligne, pos_colonnes, son_nom="Hitman, l'agent 47"):
+    def __init__(self, n_lignes, n_colonnes, pos_ligne, pos_colonnes, nb_gardes, nb_invites, son_nom="Hitman, l'agent 47"):
         self.max_L = n_lignes
         self.max_C = n_colonnes 
         self._x = pos_ligne
         self._y = pos_colonnes
         self.name = son_nom
+        self.costume_trouve = False
+        self.corde_trouve = False
+        self.nb_gardes = nb_gardes
+        self.nb_invites = nb_invites
+        self.nb_gardes_trouvees = 0
+        self.nb_invites_trouves = 0
         self.mat_connue = [["X" for i in range(self.max_C)] for j in range(self.max_L)]
         self.mat_regard = [[0 for i in range(self.max_C)] for j in range(self.max_L)]
 
@@ -63,7 +69,10 @@ class Hitman:
         return self.max_L - 1 - ligne
     
     def ajout_info_mat(self, ligne, colonne, info):
+
         ligne = self.translate_ligne(ligne)
+        
+
         if  self.check_coord(ligne, colonne):
             self.mat_connue[ligne][colonne] = info
 
@@ -71,8 +80,13 @@ class Hitman:
             if info.startswith("G"):
                 self.add_vision_garde(ligne, colonne)
             
-            if not info.startswith("E"):
-                self.mat_regard[ligne][colonne] = 0
+            #if info.startswith("E"):
+                #self.mat_regard[ligne][colonne] = 0
+
+            if info == Corde:
+                self.corde_trouve = True
+            elif info == Costume:
+                self.costume_trouve = True
         else:
             print("Erreur : les coordonnées sont hors de la matrice")
             print("Aucune information n'a été ajoutée")

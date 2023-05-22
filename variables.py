@@ -15,7 +15,24 @@ MAX_VOISINS = 25
 MAX_OUIE = 2
 MAX_VISION_GARDE = 2
 
+# Variables pour les matrices
 empty = "E"
+wall = "W"
+Costume = "Cos"
+Corde = "Cor"
+Garde = "G"
+Invite = "I"
+Personne = "P"
+Safe = "OK"
+
+GardeNord = "GN"
+GardeSud = "GS"
+GardeEst = "GE"
+GardeOuest = "GO"
+InviteNord = "IN"
+InviteSud = "IS"
+InviteEst = "IE"
+InviteOuest = "IO"
 
 # Types alias
 LC = List[List[int]]
