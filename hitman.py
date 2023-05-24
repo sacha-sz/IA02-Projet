@@ -1,28 +1,49 @@
 from variables import *
 
-
+import les_contraintes_clausales_en_cavales as cc
 class Hitman:
-    def __init__(self, n_lignes, n_colonnes, pos_ligne, pos_colonnes, nb_gardes, nb_invites, son_nom="Hitman, l'agent 47"):
+    def __init__(self, n_lignes:int, n_colonnes:int, pos_ligne:int, pos_colonne:int, nb_gardes:int, nb_invites: int, MAX_OUIE : int, BROUHAHA : int,son_nom: str="Hitman, l'agent 47"):
         self.max_L = n_lignes
         self.max_C = n_colonnes 
         self._x = pos_ligne
-        self._y = pos_colonnes
+        self._y = pos_colonne
         self.name = son_nom
+        self.MAX_OUIE = MAX_OUIE
+        self.BROUHAHA = BROUHAHA
+        self.MAX_VOISINS = self.getMAXVOISINS()
         self.costume_trouve = False
         self.corde_trouve = False
         self.nb_gardes = nb_gardes
         self.nb_invites = nb_invites
         self.nb_gardes_trouvees = 0
         self.nb_invites_trouves = 0
-        self.mat_connue = [["X" for i in range(self.max_C)] for j in range(self.max_L)]
+        self.unknown = "X"
+        self.mat_connue = [[self.unknown for i in range(self.max_C)] for j in range(self.max_L)]
         self.mat_regard = [[0 for i in range(self.max_C)] for j in range(self.max_L)]
 
+    def getMAXVOISINS(self) -> int:
+        return (self.MAX_OUIE * 2 + 1) ** 2
+    
+
+    def voit(self, info: dict) -> None:
+        """
+        Reçoit l'info de l'oracle. A déterminer comment l'info
+        sera transmise.
+        Hypothèse : dictionnaire avec les clés qui sont un Tuple désignant une position.
+        La valeur associée est ce qu'il y a à cette position (exemple : un garde, civil, un mur, vide, etc.)
+        """
+
+        for pos in info.keys():
+            self.ajout_info_mat(pos[0], pos[1], info[pos])
+
+
+
     @property
-    def x(self):
+    def x(self) -> int:
         return self._x
     
     @x.setter
-    def x(self, new_x):
+    def x(self, new_x : int):
         if 0 <= new_x and new_x < self.max_L:
             self._x = new_x
         else:
@@ -30,7 +51,7 @@ class Hitman:
             print("La coordonnée n'a pas été modifiée")
 
     @property
-    def y(self):
+    def y(self) -> int:
         return self._y
     
     @y.setter
@@ -40,6 +61,45 @@ class Hitman:
         else:
             print("Erreur : la coordonnée en y est hors de la matrice")
             print("La coordonnée n'a pas été modifiée")
+
+    def generate_neighboors(self, Indice_ligne: int, Indice_colonne: int) -> LC:
+        """
+        Fonction qui genere les voisins d'une case donnee
+        """
+        liste_voisins = []
+
+        for change_ligne in range(-self.MAX_OUIE, self.MAX_OUIE+1):
+            for change_col in range(-self.MAX_OUIE, self.MAX_OUIE+1):
+                if Indice_ligne + change_ligne < 0 or Indice_ligne + change_ligne >= self.max_L:
+                    continue
+                if Indice_colonne + change_col < 0 or Indice_colonne + change_col >= self.max_C:
+                    continue
+
+                liste_voisins.append(
+                    [Indice_ligne + change_ligne, Indice_colonne + change_col])
+        #print(liste_voisins)
+        return liste_voisins
+
+
+    def entendre_voisins(self, Indice_ligne: int, Indice_colonne: int, Nb_voisins: int) -> LC:
+        liste_voisins = self.generate_neighboors(Indice_ligne, Indice_colonne)
+        liste_clauses = []
+        liste_voisins_potentiels = []
+        
+        for index, pos_voisin in enumerate(liste_voisins):
+
+            if self.mat_connue[pos_voisin[0]][pos_voisin[1]] == self.unknown:
+                liste_voisins_potentiels.append(dict_pers[str(liste_voisins[index][0]) + str(liste_voisins[index][1])])
+            if self.mat_connue[pos_voisin[0]][pos_voisin[1]] == Personne or self.mat_connue[pos_voisin[0]][pos_voisin[1]] == Garde or self.mat_connue[pos_voisin[0]][pos_voisin[1]] == Invite:
+                Nb_voisins -= 1
+
+        #liste_clauses += cc.exactly_n(Nb_voisins, liste_voisins)
+        if Nb_voisins < self.BROUHAHA:
+            return cc.exactly(Nb_voisins, liste_voisins_potentiels)
+        
+        return cc.at_least(self.BROUHAHA, liste_voisins_potentiels) + cc.at_most(self.MAX_VOISINS, liste_voisins_potentiels)
+
+
         
     def __str__(self):
         chaine = "-" * 36 + "-" * max(self.max_C - 32, 0) * 2 + "\n"
