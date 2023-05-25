@@ -1,6 +1,6 @@
 import les_contraintes_clausales_en_cavales as cc
 import les_axiomes_universels as au
-from hitman import Hitman
+from agent_hitman import Hitman
 
 def main():
     Hitman1 = Hitman(3, 3, 0, 0)

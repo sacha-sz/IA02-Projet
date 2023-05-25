@@ -54,7 +54,6 @@ def exactly_n(n: int, liste: LL) -> LC:
 
 	return clauses
 
-# TODO : ajouter le at_least et le at_most
 def at_least(n: int, liste: LL) -> LC:
 	if n > len(liste):
 		raise ValueError("n doit etre inferieur ou egal a la taille de la liste")
