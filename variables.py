@@ -7,6 +7,15 @@ liste_clauses_global = []
 dict_pers = {}
 dict_pers_inverse = {}
 
+# Types Gophersat
+LC = List[List[int]] # Liste de clauses
+LL = List[int] # Liste de littéraux
+PS = Tuple[int, int] # Position
+LP = List[PS] # Liste de positions
+DT = Dict[PS, str] # Dictionnaire de tuiles
+
+ELEMENTS_TUILE = ["P", "G", "I"] # P = Personnage, G = Garde, I = Invite
+NB_ELEMENTS_TUILE = ELEMENTS_TUILE.__len__()
 
 # Constantes
 FILENAME = "hitman_test.cnf"
@@ -35,7 +44,3 @@ InviteSud = "IS"
 InviteEst = "IE"
 InviteOuest = "IO"
 Visited = "V"
-
-# Types alias
-LC = List[List[int]]
-LL = List[int]
