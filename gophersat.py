@@ -22,6 +22,8 @@ class Gophersat:
         # Initialisation des littéraux
         for i in range(nb_ligne):
             for j in range(nb_colonnes):
+                self.dVar[str(i) + str(j) + "P"] = self.dVar.__len__() + 1
+                """
                 for elt in ELEMENTS_TUILE:
                     self.dVar[str(i) + str(j) + elt] = self.dVar.__len__() + 1
                     if elt == "G":
@@ -76,6 +78,7 @@ class Gophersat:
                     [self.dVar[str(i) + str(j) + "P"], -self.dVar[str(i) + str(j) + "G"]])
                 self.clauses.append(
                     [self.dVar[str(i) + str(j) + "P"], -self.dVar[str(i) + str(j) + "I"]])
+        """
         
         print(self.dVar)
         self.write_file("test.cnf")
