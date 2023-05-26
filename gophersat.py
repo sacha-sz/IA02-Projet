@@ -10,7 +10,7 @@ class Gophersat:
         self.nLig = nb_ligne
         self.nCol = nb_colonnes
         self.maxPers = max_invites + max_gardes
-        self.nLitteraux = nb_colonnes * nb_ligne * NB_ELEMENTS_TUILE
+        self.nLitteraux = nb_colonnes * nb_ligne 
         self.nClauses = 0
         self.clauses: LC = []
         # Dictionnaire des variables et de leur numéro
