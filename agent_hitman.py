@@ -6,12 +6,12 @@ from gophersat import *
 class Agent_Hitman:
     def __init__(self, MAX_OUIE : int = 2, son_nom: str="Hitman, l'agent 47"):
         self.oracle = HitmanReferee() #On crée l'oracle / arbitre
-        self.gophersat = Gophersat() 
+         
 
         #Taille de la map
         self.max_L = self.oracle.start_phase1()["m"]
         self.max_C = self.oracle.start_phase1()["n"] 
-
+        self.gophersat = Gophersat(self.max_L, self.max_C)
         #Position de départ
         self._x = self.oracle.start_phase1()["position"][0]
         self._y = self.oracle.start_phase1()["position"][1]
@@ -55,7 +55,7 @@ class Agent_Hitman:
         nb_ouie = self.oracle["hear"]
         
         #Si on entend moins de BROUHAHA personnes, on regarde si on a déjà localisé des gens dans cette zone
-        if self.oracle["hear"] < self.BROUHAHA:
+        if nb_ouie < self.BROUHAHA:
             pos_neighbors = []
             for pos in neighbors:
                 if self.mat_connue[pos[0]][pos[1]] == self.unknown:
@@ -64,9 +64,9 @@ class Agent_Hitman:
                 elif self.mat_connue[pos[0]][pos[1]] == Personne or self.mat_connue[pos[0]][pos[1]] == Garde or self.mat_connue[pos[0]][pos[1]] == Invite:
                     nb_ouie -= 1
             #On ajoute les clauses
-            self.gophersat.ajout_clauses_entendre(pos_neighbors, self.oracle["hear"])
+            self.gophersat.ajout_clauses_entendre(pos_neighbors, nb_ouie)
         else:
-            self.gophersat.ajout_clauses_entendre(neighbors, self.oracle["hear"])
+            self.gophersat.ajout_clauses_entendre(neighbors, nb_ouie)
 
 
     def voir(self) -> None:
@@ -86,7 +86,7 @@ class Agent_Hitman:
             if v[1] == HC.EMPTY:
                 certitudes.append((v[0][0], v[0][1], "N"))
                 self.ajout_info_mat(v[0][0], v[0][1], empty)
-            if v[1] in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
+            elif v[1] in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
                 certitudes.append((v[0][0], v[0][1], "G"))
                 self.loc_gardes.add((v[0][0], v[0][1]))
                 if v[1] == HC.GUARD_N:
@@ -101,7 +101,7 @@ class Agent_Hitman:
                 elif v[1] == HC.GUARD_W:
                     self.ajout_info_mat(v[0][0], v[0][1], GardeOuest)
 
-            if v[1] in [HC.CIVILIAN_N, HC.CIVILIAN_S, HC.CIVILIAN_E, HC.CIVILIAN_W]:
+            elif v[1] in [HC.CIVILIAN_N, HC.CIVILIAN_S, HC.CIVILIAN_E, HC.CIVILIAN_W]:
                 certitudes.append((v[0][0], v[0][1], "I"))
                 self.loc_invites.add((v[0][0], v[0][1]))
                 if v[1] == HC.CIVILIAN_N:
@@ -115,6 +115,18 @@ class Agent_Hitman:
 
                 elif v[1] == HC.CIVILIAN_W:
                     self.ajout_info_mat(v[0][0], v[0][1], InviteOuest)
+
+            else:
+                certitudes.append((v[0][0], v[0][1], "N"))
+                if v[1] == HC.PIANO_WIRE:
+                    self.ajout_info_mat(v[0][0], v[0][1], Corde)
+
+                elif v[1] == HC.COSTUME:
+                    self.ajout_info_mat(v[0][0], v[0][1], Costume)
+                elif v[1] == HC.WALL:
+                    self.ajout_info_mat(v[0][0], v[0][1], wall)
+
+                
 
         self.gophersat.ajout_clauses_voir(certitudes)
 
