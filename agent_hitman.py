@@ -85,28 +85,54 @@ class Agent_Hitman:
         for v in vision:
             if v[1] == HC.EMPTY:
                 certitudes.append((v[0][0], v[0][1], "N"))
+                self.ajout_info_mat(v[0][0], v[0][1], empty)
             if v[1] in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
                 certitudes.append((v[0][0], v[0][1], "G"))
                 self.loc_gardes.add((v[0][0], v[0][1]))
-                self.ajout_info_mat(v[0][0], v[0][1], v[1])
+                if v[1] == HC.GUARD_N:
+                    self.ajout_info_mat(v[0][0], v[0][1], GardeNord)
+
+                elif v[1] == HC.GUARD_S:
+                    self.ajout_info_mat(v[0][0], v[0][1], GardeSud)
+
+                elif v[1] == HC.GUARD_E:
+                    self.ajout_info_mat(v[0][0], v[0][1], GardeEst)
+                
+                elif v[1] == HC.GUARD_W:
+                    self.ajout_info_mat(v[0][0], v[0][1], GardeOuest)
+
             if v[1] in [HC.CIVILIAN_N, HC.CIVILIAN_S, HC.CIVILIAN_E, HC.CIVILIAN_W]:
                 certitudes.append((v[0][0], v[0][1], "I"))
                 self.loc_invites.add((v[0][0], v[0][1]))
-                self.ajout_info_mat(v[0][0], v[0][1], v[1])
+                if v[1] == HC.CIVILIAN_N:
+                    self.ajout_info_mat(v[0][0], v[0][1], InviteNord)
+
+                elif v[1] == HC.CIVILIAN_S:
+                    self.ajout_info_mat(v[0][0], v[0][1], InviteSud)
+
+                elif v[1] == HC.CIVILIAN_E:
+                    self.ajout_info_mat(v[0][0], v[0][1], InviteEst)
+
+                elif v[1] == HC.CIVILIAN_W:
+                    self.ajout_info_mat(v[0][0], v[0][1], InviteOuest)
 
         self.gophersat.ajout_clauses_voir(certitudes)
 
-    def test(self, x : int, y : int, type : str) -> None:
+    def test(self, x : int, y : int) -> None:
         """
 
         Demande à gophersat s'il y a la présence d'une personne.
 
         """
-        res = self.gophersat.test_personne((self._x, self._y, "P"))
+        res = self.gophersat.test_personne((self._x, self._y, Personne))
         if res == 0:
             pass
+
+        if res == -1:
+            pass
+
         elif res == 1:
-            self.ajout_info_mat(x, y, type)
+            self.ajout_info_mat(x, y, Personne)
 
         elif res == 2:
             self.ajout_info_mat(x, y, Garde)
@@ -222,7 +248,7 @@ class Agent_Hitman:
             self.mat_connue[ligne][colonne] = info
 
             # Si garde on ajoute sa vision
-            if info in [HC.GUARD_N, HC.GUARD_E, HC.GUARD_S, HC.GUARD_W]:
+            if info.startswith("G"):
                 self.add_vision_garde(ligne, colonne)
             
             #if info.startswith("E"):
@@ -242,22 +268,22 @@ class Agent_Hitman:
                 #On ne connait pas sa direction, il peut regarder dans n'importe quelle direction
                 pass
 
-            elif self.mat_connue[ligne][colonne] == HC.GUARD_S:
+            elif self.mat_connue[ligne][colonne] == GardeSud:
                 for i in range(1, 3):
                     if ligne + i < self.max_L:
                         self.mat_regard[ligne + i][colonne] += 1
 
-            elif self.mat_connue[ligne][colonne] == HC.GUARD_N:
+            elif self.mat_connue[ligne][colonne] == GardeNord:
                 for i in range(1, 3):
                     if ligne - i >= 0:
                         self.mat_regard[ligne - i][colonne] += 1
 
-            elif self.mat_connue[ligne][colonne] == HC.GUARD_E:
+            elif self.mat_connue[ligne][colonne] == GardeEst:
                 for i in range(1, 3):
                     if colonne + i < self.max_C:
                         self.mat_regard[ligne][colonne + i] += 1
 
-            elif self.mat_connue[ligne][colonne] ==  HC.GUARD_W:
+            elif self.mat_connue[ligne][colonne] ==  GardeOuest:
                 for i in range(1, 3):
                     if colonne - i >= 0:
                         self.mat_regard[ligne][colonne - i] += 1
@@ -285,7 +311,7 @@ class Agent_Hitman:
                         for v in range(1, MAX_VISION_GARDE+1):
                             if i + v < self.max_L:
                                 
-                                if self.mat_connue[i + v][j] != HC.EMPTY and self.mat_connue[i + v][j] != self.unknown:
+                                if self.mat_connue[i + v][j] != empty and self.mat_connue[i + v][j] != self.unknown:
                                     vision_bloque = True
 
                                 if vision_bloque:
@@ -296,7 +322,7 @@ class Agent_Hitman:
                         for v in range(1, MAX_VISION_GARDE+1):
                             if i - v >= 0:
                                 
-                                if self.mat_connue[i - v][j] != HC.EMPTY and self.mat_connue[i - v][j] != self.unknown:
+                                if self.mat_connue[i - v][j] != empty and self.mat_connue[i - v][j] != self.unknown:
                                     vision_bloque = True
                                     
 
@@ -307,7 +333,7 @@ class Agent_Hitman:
                         for v in range(1, MAX_VISION_GARDE+1):
                             if j + v < self.max_C:
                                 
-                                if self.mat_connue[i][j + v] != HC.EMPTY and self.mat_connue[i][j + v] != self.unknown:
+                                if self.mat_connue[i][j + v] != empty and self.mat_connue[i][j + v] != self.unknown:
                                     vision_bloque = True
                                     
 
@@ -320,7 +346,7 @@ class Agent_Hitman:
                             if j - v >= 0:
                                 #print(i, j-v,self.mat_connue[i][j - v])
                                 
-                                if self.mat_connue[i][j - v] != HC.EMPTY and self.mat_connue[i][j - v] != self.unknown":
+                                if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != self.unknown:
                                     vision_bloque = True
                                     
 
