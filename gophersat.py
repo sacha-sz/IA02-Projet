@@ -60,7 +60,7 @@ class Gophersat:
             for t in lp:
                 self.clauses.append([-self.dVar[(t[0], t[1], "P")]])
                 self.nClauses += 1
-        elif nb_ouie < 5:
+        elif nb_ouie < BROUHAHA:
             print("Je peux entendre", nb_ouie, "personnes avec certitude")
 
             # Liste des litteraux correspondant aux triplets (i, j, "P")
@@ -137,11 +137,23 @@ class Gophersat:
             self.clauses.append([-self.dVar[(t[0], t[1], "G")]])
             self.nClauses += 1
         self.write_file()
+    
+    def personne_max_trouve(self) -> None:
+        """
+        On a trouvé le nombre maximum de personnes et on ajoute dans les clauses que les autres cases ne le sont pas
+        """
+        for t in self.pos_inconnues:
+            self.clauses.append([-self.dVar[(t[0], t[1], "P")]])
+            self.nClauses += 1
+        self.write_file()
 
-    def test_personne(self, pos_test: Tuple[int, int, str]) -> int:
+    def test_personne(self, pos_test: Tuple[int, int]) -> int:
         """
         On teste si la position est une personne
-        On retourne 0 si inconnu, 1 si personne, -1 si pas personne et 2 si cette personne est un garde
+        Valeurs de retour :
+        0 : inconnu
+        1 : personne avec certitude
+        -1 : pas personne avec certitude
         """
         ret = 0
         TEMP_FILENAME = "test_temp.cnf"
@@ -154,9 +166,8 @@ class Gophersat:
         res = res.stdout.decode("utf-8")
 
         if "UNSATISFIABLE" in res:
-            ret = 1
-
-        if ret == 0:
+                ret = 1
+        else:
             self.write_file(TEMP_FILENAME, True)
             with open(TEMP_FILENAME, "a") as f:
                 f.write(
@@ -168,22 +179,19 @@ class Gophersat:
 
             if "UNSATISFIABLE" in res:
                 ret = -1
-        else:
-            # On teste si c'est un garde
-            if self.test_garde(pos_test):
-                ret = 2
-                
+                                
         return ret
 
-    def test_garde(self, pos_test: Tuple[int, int, str]) -> bool:
+    def test_type(self, pos_test: Tuple[int, int, str]) -> bool:
         """
-        On teste si la position est un garde
-        On retourne True si c'est un garde, False sinon
+        On teste si la position est du type donné : G ou I
+        On retourne True si c'est du type, False sinon
         """
+        
         TEMP_FILENAME = "test_temp.cnf"
         self.write_file(TEMP_FILENAME, True)
         with open(TEMP_FILENAME, "a") as f:
-            f.write(str(-self.dVar[(pos_test[0], pos_test[1], "G")]) + " 0\n")
+            f.write(str(-self.dVar[(pos_test[0], pos_test[1], pos_test[2])]) + " 0\n")
             
         res = subprocess.run(["gophersat", TEMP_FILENAME], capture_output=True)
         res = res.stdout.decode("utf-8")
@@ -193,17 +201,16 @@ class Gophersat:
         else:
             return False
     
-        
-
 def main():
     go = Gophersat(3, 3)
 
     go.ajout_clauses_entendre([(0, 0), (0, 1), (0, 2),
                                 (1, 0), (1, 1), (1, 2),
-                                (2, 0), (2, 1), (2, 2)], 5)
+                                (2, 0), (2, 1), (2, 2)], 2)
 
     go.ajout_clauses_voir([(0, 0, "E"), (1, 0, "E"), (2, 0, "E")])
-    go.ajout_clauses_voir([(0, 1, "E")])
+    go.ajout_clauses_voir([(0, 1, "E"), (1, 1, "E"), (2, 1, "E")])
+    go.ajout_clauses_voir([(0, 2, "E")])
     
     ret = go.test_personne((2, 2))
     print(ret)
