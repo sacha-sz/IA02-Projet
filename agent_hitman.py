@@ -24,7 +24,7 @@ class Agent_Hitman:
         self.nb_gardes = self.info_actuelle["guard_count"]
         self.nb_invites = self.info_actuelle["civil_count"]
 
-        self.unknown = "X"
+        self.unknown = "."
 
         self.mat_connue = [[self.unknown for i in range(
             self.max_C)] for j in range(self.max_L)]
@@ -276,18 +276,6 @@ class Agent_Hitman:
                     else:
                         print("Erreur : le garde en (" + str(i) + ", " + str(j) + ") n'a pas de direction")
 
-    def phase_1(self):
-        """
-        On cherche à découvrir toutes les informations de la matrice.
-        """
-        self.tour_hitman()
-        self.info_actuelle = self.oracle.move()
-        self.tour_hitman()
-        self.info_actuelle = self.oracle.turn_clockwise()
-        self.tour_hitman()        
-        # while self.incomplete_mat():
-        #    self.tour_hitman()
-
     def incomplete_mat(self) -> bool:
         """
         On regarde si la matrice est complète ou non, on recherche le premier élément inconnu
@@ -306,11 +294,19 @@ class Agent_Hitman:
         - temp 2 : on fait l'hélicoptère en se tournant vers les zones les plus intéressantes
         - temp 3 : on se déplace
         """
+        print("--------------------")
+        print("\tPhase 1")
+        print("--------------------")
+        print(self)
+        
         # while self.incomplete_mat():
 
+        # A indenter
         # Temp 1
         self.entendre()
         self.voir()
+        
+        print(self)
 
         # Temp 2
 
