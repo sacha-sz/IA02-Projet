@@ -398,6 +398,38 @@ class Agent_Hitman:
 
         return list(reversed(path))
     
+    def coords_case_devant_nous(self) -> Tuple[int, int]:
+        """
+            Renvoie les coords de la case devant nous selon notre direction.
+        """
+
+        direction = self.info_actuelle["orientation"]
+        if direction == HC.N:
+            return self._x+1, self._y
+        
+        elif direction == HC.S:
+            return self._x-1, self._y
+        
+        elif direction == HC.E:
+            return self._x, self._y+1
+        
+        elif direction == HC.W:
+            return self._x, self._y-1
+        
+
+    def rotation(self, next : Tuple[int, int]):
+        """
+            Tourne dans la direction donnée pour qu'on puisse avancer sur la case next.
+        """
+        case_devant_nous = self.coords_case_devant_nous()
+        if case_devant_nous[0] == next[0] and case_devant_nous[1] == next[1]:
+            return
+        
+        while case_devant_nous[0] != next[0] or case_devant_nous[1] != next[1]:
+            self.info_actuelle = self.oracle.turn_clockwise()
+            case_devant_nous = self.coords_case_devant_nous()
+        
+    
     def phase_1(self):
         """
         On fait un tour de jeu du hitman.
