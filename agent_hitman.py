@@ -2,7 +2,7 @@ from variables import *
 import les_contraintes_clausales_en_cavales as cc
 from hitman import *
 from gophersat import *
-
+from collections import deque
 
 class Agent_Hitman:
     def __init__(self):
@@ -286,6 +286,118 @@ class Agent_Hitman:
                     return True
         return False
 
+    def est_sur_bord(self, position : Tuple[int, int]):
+        bord_haut = self.max_L-1
+        bord_bas = 0
+        bord_gauche = 0
+        bord_droit = self.max_C-1
+        x, y = position
+        return x == bord_haut or x == bord_bas or y == bord_gauche or y == bord_droit
+
+
+    def helicoptere(self):
+        """
+            On tourne autour de nous si ça vaut le coup
+        """
+    
+        self.voir()
+        self.info_actuelle = self.oracle.turn_clockwise()
+        self.voir()
+        self.info_actuelle = self.oracle.turn_clockwise()
+        self.voir()
+        self.info_actuelle = self.oracle.turn_clockwise()
+        self.voir()
+        self.info_actuelle = self.oracle.turn_clockwise()
+        self.voir()
+        
+    def inconnue_plus_proche(self):
+        """
+        Methode pour trouver le unkown le plus proche.
+        """
+
+        deplacements = [(-1, 0), (0,1), (1,0), (0,-1)]
+
+        file_attente = deque()
+        visite = [[False] * self.max_C for _ in range(self.max_L)]
+
+        x,y = self._x, self._y
+        #print("x : ", x, "y : ", y)
+
+        visite[x][y] = True
+
+        file_attente.append((x, y, 0))  # (x, y, distance)
+
+        # Recherche en largeur
+        while file_attente:
+            x, y, distance = file_attente.popleft()
+            
+            # Vérifier si la case actuelle est inconnue
+            if self.mat_connue[self.translate_ligne(x)][y] == self.unknown:
+                return (x, y), distance
+
+            # Explorer les cases voisines
+            for dx, dy in deplacements:
+                nx, ny = x + dx, y + dy
+
+                # Vérifier si la case voisine est valide et non visitée
+                if self.check_coord(self.translate_ligne(nx),ny) and self.mat_connue[self.translate_ligne(x)][ny] != wall and not visite[nx][ny]:
+                    #print("nx : ", nx, "ny : ", ny)
+                    visite[nx][ny] = True
+                    file_attente.append((nx, ny, distance + 1))
+
+        # Aucun point trouvé
+        return None
+    
+    def bfs_shortest_path(self, start, end):
+        """
+            Trouve un chemin pour aller jusqu'à end. 
+            Ne fonctionne pas encore. Sûrement un problème lié 
+            aux translations.
+        """
+        queue = deque()
+        visited = [[False] * self.max_C for _ in range(self.max_L)]
+        parent = [[None] * self.max_C for _ in range(self.max_L)]
+
+
+        queue.append(start)
+        visited[start[0]][start[1]] = True
+
+        while queue:
+            current = queue.popleft()
+            
+            if current == end:
+                break
+
+            row, col = current
+
+            neighbors = [
+                (row-1, col), 
+                (row, col+1), 
+                (row+1, col), 
+                (row, col-1)
+                ]
+            
+            for neighbor in neighbors:
+                n_row, n_col = neighbor
+
+                if self.check_coord(self.translate_ligne(n_row),n_col) and self.mat_connue[self.translate_ligne(n_row)][n_col] != wall and not visited[n_row][n_col]:
+                    #print("n_row : ", n_row, "n_col : ", n_col)
+                    visited[n_row][n_col] = True
+                    parent[n_row][n_col] = current
+                    queue.append(neighbor)
+
+
+        if not visited[end[0]][end[1]]:
+            return None
+        
+        path = []
+        current = start
+        while current is not None:
+            path.append(current)
+            current = parent[current[0]][current[1]]
+
+        return list(reversed(path))
+    
     def phase_1(self):
         """
         On fait un tour de jeu du hitman.
@@ -306,9 +418,48 @@ class Agent_Hitman:
         self.entendre()
         self.voir()
         
+        
         print(self)
+        print("penalties : ", self.info_actuelle["penalties"])
 
         # Temp 2
+        self.helicoptere()
+        print(self)
+        self.voir()
+        print("penalites : ", self.info_actuelle["penalties"])
+
+
+
+
+        #Temp 3
+        self.info_actuelle = self.oracle.move()
+        self.voir()
+        self.helicoptere()
+        self.voir()
+
+        print(self)
+        print("penalites : ", self.info_actuelle["penalties"])
+        self._x, self._y = self.info_actuelle["position"][1], self.info_actuelle["position"][0]
+        pos, distance = self.inconnue_plus_proche()
+        #print ("x : ", self._x, "y : ", self._y)
+        #print("pos : ", pos, "distance : ", distance)
+        #path = self.bfs_shortest_path((self._x, self._y), pos)
+        #print("path : ", path)
+        self.info_actuelle = self.oracle.turn_clockwise()
+        print(self.info_actuelle["orientation"])
+        self.info_actuelle = self.oracle.move()
+        self.voir()
+        self.info_actuelle = self.oracle.move()
+        self.voir()
+        print(self)
+        self._x, self._y = self.info_actuelle["position"][1], self.info_actuelle["position"][0]
+        print("x : ", self._x, "y : ", self._y)
+        print("penalites : ", self.info_actuelle["penalties"])
+        pos, distance = self.inconnue_plus_proche()
+        print("pos : ", pos, "distance : ", distance)
+
+
+
 
 
 def main():
