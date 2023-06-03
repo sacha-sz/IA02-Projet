@@ -271,7 +271,7 @@ class Agent_Hitman:
                                 if vision_bloque:
                                     self.mat_regard[i + v][j] = 0
 
-                    elif self.mat_connue[i][j] == GardeNord
+                    elif self.mat_connue[i][j] == GardeNord:
                         for v in range(1, MAX_VISION_GARDE+1):
                             if i - v >= 0:
 
