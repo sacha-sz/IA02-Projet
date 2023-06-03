@@ -1,5 +1,4 @@
 from variables import *
-import les_contraintes_clausales_en_cavales as cc
 from hitman import *
 from gophersat import *
 from collections import deque
@@ -100,9 +99,6 @@ class Agent_Hitman:
     def invitesTousTrouves(self):
         return len(self.loc_invites) == self.nb_invites
 
-    def getMAXVOISINS(self) -> int:
-        return (MAX_OUIE * 2 + 1) ** 2
-
     def check_coord(self, ligne, colonne):
         """
         Vérifie si les coordonnées sont dans la matrice
@@ -201,6 +197,8 @@ class Agent_Hitman:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, Costume)
                 elif v[1] == HC.WALL:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, wall)
+                elif v[1] == HC.TARGET:
+                    self.ajout_info_mat(pos_vision_x, pos_vision_y, Target)
                     
         self.gophersat.ajout_clauses_voir(certitudes)
 
@@ -263,7 +261,7 @@ class Agent_Hitman:
             for j in range(self.max_C):
                 if self.mat_connue[i][j].startswith("G"):
                     vision_bloque = False
-                    if self.mat_connue[i][j].endswith("S"):
+                    if self.mat_connue[i][j] == GardeSud:
                         for v in range(1, MAX_VISION_GARDE+1):
                             if i + v < self.max_L:
 
@@ -273,7 +271,7 @@ class Agent_Hitman:
                                 if vision_bloque:
                                     self.mat_regard[i + v][j] = 0
 
-                    elif self.mat_connue[i][j].endswith("N"):
+                    elif self.mat_connue[i][j] == GardeNord
                         for v in range(1, MAX_VISION_GARDE+1):
                             if i - v >= 0:
 
@@ -352,7 +350,7 @@ class Agent_Hitman:
         file_attente = deque()
         visite = [[False] * self.max_C for _ in range(self.max_L)]
 
-        x,y = self._x, self._y
+        x,y = self.translate_ligne(self._x), self._y
         visite[x][y] = True
 
         file_attente.append((x, y, 0))  # (x, y, distance)
@@ -362,15 +360,15 @@ class Agent_Hitman:
             x, y, distance = file_attente.popleft()
             
             # Vérifier si la case actuelle est inconnue
-            if self.mat_connue[self.translate_ligne(x)][y] == self.unknown:
-                return (x, y), distance
+            if self.mat_connue[x][y] == self.unknown:
+                return (x, y, distance)
 
             # Explorer les cases voisines
             for dx, dy in deplacements:
                 nx, ny = x + dx, y + dy
 
                 # Vérifier si la case voisine est valide et non visitée
-                if self.check_coord(self.translate_ligne(nx),ny) and self.mat_connue[self.translate_ligne(x)][ny] != wall and not visite[nx][ny]:
+                if self.check_coord(nx,ny) and self.mat_connue[x][ny] != wall and not visite[nx][ny]:
                     #print("nx : ", nx, "ny : ", ny)
                     visite[nx][ny] = True
                     file_attente.append((nx, ny, distance + 1))
@@ -396,8 +394,7 @@ class Agent_Hitman:
                 self.mat_connue[row][col] != GardeEst and \
                 self.mat_connue[row][col] != GardeNord and \
                 self.mat_connue[row][col] != GardeOuest and \
-                self.mat_connue[row][col] != GardeSud and \
-                self.mat_connue[row][col] != self.unknown : 
+                self.mat_connue[row][col] != GardeSud : 
                     
                 visited[row][col] = True
                     
@@ -467,16 +464,16 @@ class Agent_Hitman:
 
         direction = self.info_actuelle["orientation"]
         if direction == HC.N:
-            return self._x+1, self._y
+            return self.translate_ligne(self._x)-1, self._y
         
         elif direction == HC.S:
-            return self._x-1, self._y
+            return self.translate_ligne(self._x)+1, self._y
         
         elif direction == HC.E:
-            return self._x, self._y+1
+            return self.translate_ligne(self._x), self._y+1
         
         elif direction == HC.W:
-            return self._x, self._y-1
+            return self.translate_ligne(self._x), self._y-1
         
 
     def rotation(self, next : Tuple[int, int]):
@@ -489,76 +486,97 @@ class Agent_Hitman:
         
         while case_devant_nous[0] != next[0] or case_devant_nous[1] != next[1]:
             self.info_actuelle = self.oracle.turn_clockwise()
+            self.voir()
             case_devant_nous = self.coords_case_devant_nous()                
+    
+    def first_move(self):
+        """
+        Hitman se déplace pour la première fois vers un emplacement empty.
+        """
+        
+        deltas = [(-1, 0), (0, 1), (1, 0), (0, -1)]
+        pos_x = self.translate_ligne(self._x)
+        pos_possible = []
+        
+        for delta in deltas:
+            if self.check_coord(pos_x + delta[0], self._y + delta[1]) and self.mat_connue[pos_x + delta[0]][self._y + delta[1]] == empty:
+                pos_possible.append((pos_x + delta[0], self._y + delta[1]))
+        
+        if len(pos_possible) == 0:
+            return
+        
+        while self.coords_case_devant_nous() not in pos_possible:
+            self.info_actuelle = self.oracle.turn_clockwise()
+            self.voir()
+        
+        self.move()            
+        
+    def move(self):
+        """
+        Gère le déplacement d'Hitman
+        """
+        self.info_actuelle = self.oracle.move()
+        self.entendre()
+        self.voir()
+        self._x = self.info_actuelle["position"][1]
+        self._y = self.info_actuelle["position"][0]
+        
     
     def phase_1(self):
         """
         On fait un tour de jeu du hitman.
-        Ce dernier se décompose en 3 temps :
-        - temp 1 : on ajoute toutes les informations qu'on peut dans gophersat
-        - temp 2 : on fait l'hélicoptère en se tournant vers les zones les plus intéressantes
-        - temp 3 : on se déplace
         """
         print("--------------------")
         print("\tPhase 1")
         print("--------------------")
         print(self)
         
-        # while self.incomplete_mat():
 
-        # A indenter
-        # Temp 1
+        # Phase 1 : on fait l'hélicoptère puis on se déplace sur une case empty
         self.entendre()
         self.helicoptere()        
+        self.first_move()
         print(self)
         
+        self.helicoptere()
+        print(self)
+        
+        queue_action = deque()
+        actual_target = None
+
         while self.incomplete_mat():
-            self.helicoptere()
-            nearest_unknown = self.inconnue_plus_proche()
-            if nearest_unknown is None:
-                break
-            path_to_nearest_unknown = self.bfs_shortest_path_v2((self._x, self._y), nearest_unknown)
-            print("path : ", path_to_nearest_unknown)
-            
-        
-        print("penalties : ", self.info_actuelle["penalties"])
-
-        # Temp 2
-        self.helicoptere()
-        print(self)
-        self.voir()
+            if len(queue_action) == 0:
+                nearest_unknown = self.inconnue_plus_proche()
+                print("nearest_unknown : ", nearest_unknown)
+                actual_target = (nearest_unknown[0], nearest_unknown[1])
+                path_temp = self.bfs_shortest_path_v2((self.translate_ligne(self._x), self._y), (nearest_unknown[0], nearest_unknown[1]))
+                path_temp.pop(0) # On enlève la case sur laquelle on est
+                print("path_temp : ", path_temp)
+                for coord in path_temp:
+                    queue_action.append(coord)
+            else:
+                # On vérifie si on a pas déjà vu la case d'objectif
+                if self.mat_connue[actual_target[0]][actual_target[1]] == self.unknown: 
+                    # On regarde la prochaine action à faire
+                    next_action = queue_action.popleft()
+                    
+                    if next_action[0] == actual_target[0] and next_action[1] == actual_target[1]:
+                        # On est arrivé à la case cible
+                        self.helicoptere()
+                    else:
+                        # On s'y dirige
+                        case_devant_nous = self.coords_case_devant_nous()
+                        while case_devant_nous[0] != next_action[0] or case_devant_nous[1] != next_action[1]:
+                            self.info_actuelle = self.oracle.turn_clockwise()
+                            self.voir()
+                            case_devant_nous = self.coords_case_devant_nous()
+                            
+                        self.move()
+                else:
+                    queue_action.clear()
+                    
+            print(self)              
         print("penalites : ", self.info_actuelle["penalties"])
-
-
-
-
-        #Temp 3
-        self.info_actuelle = self.oracle.move()
-        self.voir()
-        self.helicoptere()
-        self.voir()
-
-        print(self)
-        print("penalites : ", self.info_actuelle["penalties"])
-        self._x, self._y = self.info_actuelle["position"][1], self.info_actuelle["position"][0]
-        pos, distance = self.inconnue_plus_proche()
-        #print ("x : ", self._x, "y : ", self._y)
-        #print("pos : ", pos, "distance : ", distance)
-        #path = self.bfs_shortest_path((self._x, self._y), pos)
-        #print("path : ", path)
-        self.info_actuelle = self.oracle.turn_clockwise()
-        print(self.info_actuelle["orientation"])
-        self.info_actuelle = self.oracle.move()
-        self.voir()
-        self.info_actuelle = self.oracle.move()
-        self.voir()
-        print(self)
-        self._x, self._y = self.info_actuelle["position"][1], self.info_actuelle["position"][0]
-        print("x : ", self._x, "y : ", self._y)
-        print("penalites : ", self.info_actuelle["penalties"])
-        pos, distance = self.inconnue_plus_proche()
-        print("pos : ", pos, "distance : ", distance)
-
 
 def main():
     Hitman1 = Agent_Hitman()

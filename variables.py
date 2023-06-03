@@ -34,6 +34,7 @@ Garde = "G"
 Invite = "I"
 Personne = "P"
 Safe = "OK"
+Target = "T"
 MV = "MV"
 
 GardeNord = "G" + "\u2191"
