@@ -33,7 +33,7 @@ class Agent_Hitman:
 
     def __str__(self):
         """
-            Affichage de l'agent
+        Affichage de la matrice des connaissances de l'agent
         """
         max_length = 4
         border = '+' + '-' * ((max_length + 2) * self.max_C + self.max_L) + '+'
