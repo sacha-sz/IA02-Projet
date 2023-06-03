@@ -378,6 +378,37 @@ class Agent_Hitman:
         # Aucun point trouvé
         return None
     
+    def bfs_shortest_path_v2(self, start, end):
+        visited = [[False] * self.max_C for _ in range(self.max_L)]
+        queue = deque([(start, [])])
+        
+        deltas = [(-1, 0), (0, 1), (1, 0), (0, -1)]
+        
+        while queue:
+            current, path = queue.popleft()
+            row, col = current
+            
+            if current == end:
+                return path + [current]
+            
+            if not visited[row][col] and self.mat_connue[row][col] != wall and \
+                self.mat_connue[row][col] != Garde and \
+                self.mat_connue[row][col] != GardeEst and \
+                self.mat_connue[row][col] != GardeNord and \
+                self.mat_connue[row][col] != GardeOuest and \
+                self.mat_connue[row][col] != GardeSud and \
+                self.mat_connue[row][col] != self.unknown : 
+                    
+                visited[row][col] = True
+                    
+                for delta in deltas:
+                    new_row, new_col = row + delta[0], col + delta[1]
+                    if self.check_coord(new_row, new_col):
+                        queue.append(((new_row, new_col), path + [current]))
+                        
+        return None
+        
+    
     def bfs_shortest_path(self, start, end):
         """
             Trouve un chemin pour aller jusqu'à end. 
@@ -483,7 +514,12 @@ class Agent_Hitman:
         
         while self.incomplete_mat():
             self.helicoptere()
-            self.inconnue_plus_proche()
+            nearest_unknown = self.inconnue_plus_proche()
+            if nearest_unknown is None:
+                break
+            path_to_nearest_unknown = self.bfs_shortest_path_v2((self._x, self._y), nearest_unknown)
+            print("path : ", path_to_nearest_unknown)
+            
         
         print("penalties : ", self.info_actuelle["penalties"])
 
