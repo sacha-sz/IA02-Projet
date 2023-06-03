@@ -6,8 +6,8 @@ from collections import deque
 
 class Agent_Hitman:
     def __init__(self):
-        self.oracle = HitmanReferee()  # On crée l'oracle / arbitre
-        self.info_actuelle = self.oracle.start_phase1()  # On récupère les infos de départ
+        self.oracle = HitmanReferee() 
+        self.info_actuelle = self.oracle.start_phase1()
 
         # Taille de la map
         self.max_L = self.info_actuelle["m"]
@@ -18,70 +18,149 @@ class Agent_Hitman:
         self._x = self.info_actuelle["position"][1]
         self._y = self.info_actuelle["position"][0]
 
-        # Attributs pour les voisins et l'ouie
-        self.MAX_VOISINS = self.getMAXVOISINS()
-
         self.nb_gardes = self.info_actuelle["guard_count"]
         self.nb_invites = self.info_actuelle["civil_count"]
 
-        self.unknown = "."
+        self.unknown = "?"
 
-        self.mat_connue = [[self.unknown for i in range(
-            self.max_C)] for j in range(self.max_L)]
+        self.mat_connue = [[self.unknown for i in range(self.max_C)] for j in range(self.max_L)]
 
-        self.mat_regard = [
-            [0 for i in range(self.max_C)] for j in range(self.max_L)]
+        self.mat_regard = [[0 for i in range(self.max_C)] for j in range(self.max_L)]
 
         self.loc_gardes = set()
         self.loc_invites = set()
+
 
     def __str__(self):
         """
             Affichage de l'agent
         """
-        chaine = ""
-        for i in range(self.max_L):
-            for j in range(self.max_C):
-                chaine += " " * \
-                    min(3-len(self.mat_connue[i][j]),
-                        2) + self.mat_connue[i][j]
-            chaine += "\n"
-        return chaine
+        max_length = 4
+        border = '+' + '-' * ((max_length + 2) * self.max_C + self.max_L) + '+'
+        output = [border]
 
+        for i in range(self.max_L):
+            row_str = '|'
+            for j in range(self.max_C):
+                if self.translate_ligne(self._x) == i and self._y == j:
+                    element = self.mat_connue[i][j] + " H"
+                    if self.info_actuelle["orientation"] == HC.N:
+                        element += "\u2191"
+                    elif self.info_actuelle["orientation"] == HC.S:
+                        element += "\u2193"
+                    elif self.info_actuelle["orientation"] == HC.E:
+                        element += "\u2192"
+                    elif self.info_actuelle["orientation"] == HC.W:
+                        element += "\u2190"
+                    element_str = element.center(max_length)
+                else:
+                    element_str = self.mat_connue[i][j].center(max_length)
+                row_str += f' {element_str} |'
+            output.append(row_str)
+            output.append(border)
+
+        return '\n'.join(output)
+    
+    def generate_neighboors(self, Indice_ligne: int, Indice_colonne: int) -> LC:
+        """
+        Fonction qui genere les voisins d'une case donnee
+        """
+        liste_voisins = []
+
+        for change_ligne in range(-MAX_OUIE, MAX_OUIE+1):
+            for change_col in range(-MAX_OUIE, MAX_OUIE+1):
+                if Indice_ligne + change_ligne < 0 or Indice_ligne + change_ligne >= self.max_L or \
+                    Indice_colonne + change_col < 0 or Indice_colonne + change_col >= self.max_C:
+                    continue
+                
+                liste_voisins.append([Indice_ligne + change_ligne, Indice_colonne + change_col])
+                
+        return liste_voisins
+    
+    def ajout_info_mat(self, ligne, colonne, info):
+        """
+        Ajoute une information dans la matrice de connaissance et convertit la ligne
+        """
+        
+        ligne = self.translate_ligne(ligne)
+        if self.check_coord(ligne, colonne):
+            self.mat_connue[ligne][colonne] = info
+
+            # Si garde on ajoute sa vision
+            if info.startswith("G"):
+                self.add_vision_garde(ligne, colonne)
+
+        else:
+            print("Erreur : les coordonnées sont hors de la matrice")
+            print("Aucune information n'a été ajoutée")
+
+    def gardesTousTrouves(self):
+        return len(self.loc_gardes) == self.nb_gardes
+
+    def invitesTousTrouves(self):
+        return len(self.loc_invites) == self.nb_invites
+
+    def getMAXVOISINS(self) -> int:
+        return (MAX_OUIE * 2 + 1) ** 2
+
+    def check_coord(self, ligne, colonne):
+        """
+        Vérifie si les coordonnées sont dans la matrice
+        """
+        
+        if 0 <= ligne and ligne < self.max_L and 0 <= colonne and colonne < self.max_C:
+            return True
+        else:
+            return False
+
+    def translate_ligne(self, ligne):
+        """
+        Permet de faire en sorte que la ligne 0 soit en bas de la matrice
+        """
+        return self.max_L - 1 - ligne
+
+    
     def entendre(self) -> None:
         """
-            Entendre : méthode qui permet de générer les clauses
+        Méthode qui ajoute les clauses pour l'ouie
+        
+        Légère optimisation: si on entend moins de BROUHAHA personnes, on regarde si on a déjà localisé des gens dans cette zone
         """
-        neighbors = self.generate_neighboors(
-            self._x, self._y)  # On génère les voisins
+        
+        neighbors = self.generate_neighboors(self.translate_ligne(self._x), self._y)
         nb_ouie = self.info_actuelle["hear"]
 
         # Si on entend moins de BROUHAHA personnes, on regarde si on a déjà localisé des gens dans cette zone
         if nb_ouie < BROUHAHA:
-            pos_neighbors = []
+            unknown_pos = []
             for pos in neighbors:
                 if self.mat_connue[pos[0]][pos[1]] == self.unknown:
-                    pos_neighbors.append(pos)
-                elif self.mat_connue[pos[0]][pos[1]] == Personne or self.mat_connue[pos[0]][pos[1]] == Garde or self.mat_connue[pos[0]][pos[1]] == Invite:
+                    unknown_pos.append(pos)
+                elif self.mat_connue[pos[0]][pos[1]] == Personne or \
+                    self.mat_connue[pos[0]][pos[1]] == Garde or \
+                    self.mat_connue[pos[0]][pos[1]] == Invite:
                     nb_ouie -= 1
-            # On ajoute les clauses
-            self.gophersat.ajout_clauses_entendre(pos_neighbors, nb_ouie)
+            
+            self.gophersat.ajout_clauses_entendre(unknown_pos, nb_ouie)
         else:
             self.gophersat.ajout_clauses_entendre(neighbors, nb_ouie)
 
     def voir(self) -> None:
         """
-            Voir : méthode qui permet de générer les clauses
+        Méthode qui ajoute les clauses pour la vision
         """
+        
         vision = self.info_actuelle["vision"]
+        
         certitudes = []
         for v in vision:
             pos_vision_x = v[0][1]
             pos_vision_y = v[0][0]
-            
+                        
             if v[1] == HC.EMPTY:
                 certitudes.append((pos_vision_x, pos_vision_y, "N"))
                 self.ajout_info_mat(pos_vision_x, pos_vision_y, empty)
+                
             elif v[1] in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
                 certitudes.append((pos_vision_x, pos_vision_y, "G"))
                 self.loc_gardes.add((pos_vision_x, pos_vision_y))
@@ -100,6 +179,7 @@ class Agent_Hitman:
             elif v[1] in [HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E, HC.CIVIL_W]:
                 certitudes.append((pos_vision_x, pos_vision_y, "I"))
                 self.loc_invites.add((pos_vision_x, pos_vision_y))
+                
                 if v[1] == HC.CIVIL_N:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, InviteNord)
 
@@ -121,11 +201,12 @@ class Agent_Hitman:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, Costume)
                 elif v[1] == HC.WALL:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, wall)
+                    
         self.gophersat.ajout_clauses_voir(certitudes)
 
     def test(self, x: int, y: int) -> None:
         """
-            Demande à gophersat s'il y a la présence d'une personne.
+        Demande à gophersat s'il y a la présence d'une personne.
         """
         res = self.gophersat.test_personne((self._x, self._y, Personne))
         if res == 0:
@@ -140,54 +221,6 @@ class Agent_Hitman:
         elif res == 2:
             self.ajout_info_mat(x, y, Garde)
             self.loc_gardes.add((x, y))
-
-    def gardesTousTrouves(self):
-        return len(self.loc_gardes) == self.nb_gardes
-
-    def invitesTousTrouves(self):
-        return len(self.loc_invites) == self.nb_invites
-
-    def getMAXVOISINS(self) -> int:
-        return (MAX_OUIE * 2 + 1) ** 2
-
-    def generate_neighboors(self, Indice_ligne: int, Indice_colonne: int) -> LC:
-        """
-        Fonction qui genere les voisins d'une case donnee
-        """
-        liste_voisins = []
-
-        for change_ligne in range(-MAX_OUIE, MAX_OUIE+1):
-            for change_col in range(-MAX_OUIE, MAX_OUIE+1):
-                if Indice_ligne + change_ligne < 0 or Indice_ligne + change_ligne >= self.max_L:
-                    continue
-                if Indice_colonne + change_col < 0 or Indice_colonne + change_col >= self.max_C:
-                    continue
-
-                liste_voisins.append(
-                    [Indice_ligne + change_ligne, Indice_colonne + change_col])
-        return liste_voisins
-
-    def check_coord(self, ligne, colonne):
-        if 0 <= ligne and ligne < self.max_L and 0 <= colonne and colonne < self.max_C:
-            return True
-        else:
-            return False
-
-    def translate_ligne(self, ligne):
-        return self.max_L - 1 - ligne
-
-    def ajout_info_mat(self, ligne, colonne, info):
-        ligne = self.translate_ligne(ligne)
-        if self.check_coord(ligne, colonne):
-            self.mat_connue[ligne][colonne] = info
-
-            # Si garde on ajoute sa vision
-            if info.startswith("G"):
-                self.add_vision_garde(ligne, colonne)
-
-        else:
-            print("Erreur : les coordonnées sont hors de la matrice")
-            print("Aucune information n'a été ajoutée")
 
     def add_vision_garde(self, ligne, colonne):
         if self.check_coord(ligne, colonne):
@@ -215,8 +248,7 @@ class Agent_Hitman:
                     if colonne - i >= 0:
                         self.mat_regard[ligne][colonne - i] += 1
             else:
-                print("Ce n'est pas un garde qui est en (" +
-                      str(ligne) + ", " + str(colonne) + ")")
+                print("Ce n'est pas un garde qui est en (" + str(ligne) + ", " + str(colonne) + ")")
         else:
             print("Erreur : les coordonnées sont hors de la matrice")
             print("Aucune information n'a été ajoutée")
@@ -298,7 +330,7 @@ class Agent_Hitman:
     def helicoptere(self):
         """
             On tourne autour de nous si ça vaut le coup
-        """
+        """         
     
         self.voir()
         self.info_actuelle = self.oracle.turn_clockwise()
@@ -321,8 +353,6 @@ class Agent_Hitman:
         visite = [[False] * self.max_C for _ in range(self.max_L)]
 
         x,y = self._x, self._y
-        #print("x : ", x, "y : ", y)
-
         visite[x][y] = True
 
         file_attente.append((x, y, 0))  # (x, y, distance)
@@ -392,10 +422,11 @@ class Agent_Hitman:
         
         path = []
         current = start
-        while current is not None:
+        while current:
             path.append(current)
             current = parent[current[0]][current[1]]
 
+        print(path)
         return list(reversed(path))
     
     def coords_case_devant_nous(self) -> Tuple[int, int]:
@@ -427,8 +458,7 @@ class Agent_Hitman:
         
         while case_devant_nous[0] != next[0] or case_devant_nous[1] != next[1]:
             self.info_actuelle = self.oracle.turn_clockwise()
-            case_devant_nous = self.coords_case_devant_nous()
-        
+            case_devant_nous = self.coords_case_devant_nous()                
     
     def phase_1(self):
         """
@@ -448,10 +478,13 @@ class Agent_Hitman:
         # A indenter
         # Temp 1
         self.entendre()
-        self.voir()
-        
-        
+        self.helicoptere()        
         print(self)
+        
+        while self.incomplete_mat():
+            self.helicoptere()
+            self.inconnue_plus_proche()
+        
         print("penalties : ", self.info_actuelle["penalties"])
 
         # Temp 2
@@ -489,9 +522,6 @@ class Agent_Hitman:
         print("penalites : ", self.info_actuelle["penalties"])
         pos, distance = self.inconnue_plus_proche()
         print("pos : ", pos, "distance : ", distance)
-
-
-
 
 
 def main():
