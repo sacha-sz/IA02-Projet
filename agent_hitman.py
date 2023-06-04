@@ -552,10 +552,14 @@ class Agent_Hitman:
                 if not self.gardesTrouves and self.gardesTousTrouves():
                     self.gardesTrouves = True
                     self.gophersat.garde_max_trouve()
+                    if self.invitesTrouves:
+                        self.gophersat.personne_max_trouve()
                 
                 if not self.invitesTrouves and self.invitesTousTrouves():
                     self.gardesTrouves = True
                     self.gophersat.invite_max_trouve()
+                    if self.gardesTrouves:
+                        self.gophersat.personne_max_trouve()
 
                     
         print(self)
