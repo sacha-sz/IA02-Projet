@@ -564,9 +564,7 @@ class Agent_Hitman:
                     
         print(self)
         print("penalites : ", self.info_actuelle["penalties"])
-        mat_hitman = self.conversion_mat_connue()
-        print(mat_hitman)
-        if self.oracle.send_content(mat_hitman):
+        if self.oracle.send_content(self.conversion_mat_connue()):
             print("Victoire !")
             print("--------------------")
             print("\tFin de la phase 1")
