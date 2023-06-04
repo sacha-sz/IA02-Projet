@@ -1,6 +1,5 @@
 import subprocess
 from variables import *
-from typing import List, Tuple, Dict, Set
 from itertools import combinations
 
 
@@ -36,7 +35,7 @@ class Gophersat:
                 self.nClauses += 3
         self.write_file()
 
-    def write_file(self, file_name: str = "test.cnf", test: bool = False) -> None:
+    def write_file(self, file_name: str = FILENAME, test: bool = False) -> None:
         with open(file_name, "w") as f:
             if test:
                 f.write("p cnf " + str(self.nLitteraux) +
@@ -49,7 +48,7 @@ class Gophersat:
                     f.write(str(litteral) + " ")
                 f.write("0\n")
 
-    def ajout_clauses_entendre(self, lp: List[Tuple[int, int]], nb_ouie: int) -> None:
+    def ajout_clauses_entendre(self, lp: LP, nb_ouie: int) -> None:
         """
         A partir des positions environnantes, on ajoute les clauses pour que le nombre de personnages entendus soit égal à nb_ouie
         """
@@ -106,7 +105,7 @@ class Gophersat:
                 self.nClauses += 1
             self.write_file()
 
-    def ajout_clauses_voir(self, res_liste: List[Tuple[int, int, str]]) -> None:
+    def ajout_clauses_voir(self, res_liste: LPS) -> None:
         """
         A partir des positions vues et de leur type, on ajoute les clauses pour que les positions vues soient correctes
         """
@@ -147,7 +146,7 @@ class Gophersat:
             self.nClauses += 1
         self.write_file()
 
-    def test_personne(self, pos_test: Tuple[int, int]) -> int:
+    def test_personne(self, pos_test: PS) -> int:
         """
         On teste si la position est une personne
         Valeurs de retour :
@@ -156,7 +155,7 @@ class Gophersat:
         -1 : pas personne avec certitude
         """
         ret = 0
-        TEMP_FILENAME = "test_temp.cnf"
+        TEMP_FILENAME = "test.cnf"
 
         self.write_file(TEMP_FILENAME, True)
         with open(TEMP_FILENAME, "a") as f:
@@ -182,13 +181,13 @@ class Gophersat:
                                 
         return ret
 
-    def test_type(self, pos_test: Tuple[int, int, str]) -> bool:
+    def test_type(self, pos_test: PST) -> bool:
         """
         On teste si la position est du type donné : G ou I
         On retourne True si c'est du type, False sinon
         """
         
-        TEMP_FILENAME = "test_temp.cnf"
+        TEMP_FILENAME = "test.cnf"
         self.write_file(TEMP_FILENAME, True)
         with open(TEMP_FILENAME, "a") as f:
             f.write(str(-self.dVar[(pos_test[0], pos_test[1], pos_test[2])]) + " 0\n")
@@ -196,25 +195,4 @@ class Gophersat:
         res = subprocess.run(["gophersat", TEMP_FILENAME], capture_output=True)
         res = res.stdout.decode("utf-8")
         
-        if "UNSATISFIABLE" in res:
-            return True
-        else:
-            return False
-    
-def main():
-    go = Gophersat(3, 3)
-
-    go.ajout_clauses_entendre([(0, 0), (0, 1), (0, 2),
-                                (1, 0), (1, 1), (1, 2),
-                                (2, 0), (2, 1), (2, 2)], 2)
-
-    go.ajout_clauses_voir([(0, 0, "E"), (1, 0, "E"), (2, 0, "E")])
-    go.ajout_clauses_voir([(0, 1, "E"), (1, 1, "E"), (2, 1, "E")])
-    go.ajout_clauses_voir([(0, 2, "E")])
-    
-    ret = go.test_personne((2, 2))
-    print(ret)
-
-
-if __name__ == "__main__":
-    main()
+        return "UNSATISFIABLE" in res

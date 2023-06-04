@@ -22,9 +22,9 @@ class Agent_Hitman:
 
         self.unknown = "?"
 
-        self.mat_connue = [[self.unknown for i in range(self.max_C)] for j in range(self.max_L)]
+        self.mat_connue = [[self.unknown] * self.max_C for _ in range(self.max_L)]
 
-        self.mat_regard = [[0 for i in range(self.max_C)] for j in range(self.max_L)]
+        self.mat_regard = [[0] * self.max_C for _ in range(self.max_L)]
 
         self.loc_gardes = set()
         self.loc_invites = set()
@@ -78,7 +78,7 @@ class Agent_Hitman:
                 
         return liste_voisins
     
-    def ajout_info_mat(self, ligne, colonne, info):
+    def ajout_info_mat(self, ligne : int, colonne :int, info :str) -> None:
         """
         Ajoute une information dans la matrice de connaissance et convertit la ligne
         """
@@ -90,28 +90,32 @@ class Agent_Hitman:
             # Si garde on ajoute sa vision
             if info.startswith("G"):
                 self.add_vision_garde(ligne, colonne)
+            
+            if self.gardesTousTrouves():
+                self.gophersat.invite_max_trouve()
+                
+            if self.invitesTousTrouves():
+                self.gophersat.garde_max_trouve()
+                
+            if self.gardesTousTrouves() and self.invitesTousTrouves():
+                self.gophersat.personne_max_trouve()
 
         else:
-            print("Erreur : les coordonnées sont hors de la matrice")
-            print("Aucune information n'a été ajoutée")
+            print("Erreur : les coordonnées sont hors de la matrice\nAucune information n'a été ajoutée")
 
-    def gardesTousTrouves(self):
+    def gardesTousTrouves(self) -> bool:
         return len(self.loc_gardes) == self.nb_gardes
 
-    def invitesTousTrouves(self):
+    def invitesTousTrouves(self) -> bool:
         return len(self.loc_invites) == self.nb_invites
 
-    def check_coord(self, ligne, colonne):
+    def check_coord(self, ligne, colonne) -> bool:
         """
         Vérifie si les coordonnées sont dans la matrice
         """
-        
-        if 0 <= ligne and ligne < self.max_L and 0 <= colonne and colonne < self.max_C:
-            return True
-        else:
-            return False
+        return 0 <= ligne and ligne < self.max_L and 0 <= colonne and colonne < self.max_C
 
-    def translate_ligne(self, ligne):
+    def translate_ligne(self, ligne) -> int:
         """
         Permet de faire en sorte que la ligne 0 soit en bas de la matrice
         """
@@ -222,7 +226,7 @@ class Agent_Hitman:
             self.ajout_info_mat(x, y, Garde)
             self.loc_gardes.add((x, y))
 
-    def add_vision_garde(self, ligne, colonne):
+    def add_vision_garde(self, ligne: int, colonne: int) -> None:
         if self.check_coord(ligne, colonne):
             if self.mat_connue[ligne][colonne] == Garde:
                 # On ne connait pas sa direction, il peut regarder dans n'importe quelle direction
@@ -250,11 +254,10 @@ class Agent_Hitman:
             else:
                 print("Ce n'est pas un garde qui est en (" + str(ligne) + ", " + str(colonne) + ")")
         else:
-            print("Erreur : les coordonnées sont hors de la matrice")
-            print("Aucune information n'a été ajoutée")
+            print("Erreur : les coordonnées sont hors de la matrice\nAucune information n'a été ajoutée")
         self.verif_vision()
 
-    def verif_vision(self):
+    def verif_vision(self) -> None:
         """
         Si un garde a un objet/mur/personne devant lui, son champ 
         de vision doit être réduit.
@@ -297,8 +300,6 @@ class Agent_Hitman:
                         for v in range(1, MAX_VISION_GARDE+1):
 
                             if j - v >= 0:
-                                # print(i, j-v,self.mat_connue[i][j - v])
-
                                 if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != self.unknown:
                                     vision_bloque = True
 
@@ -312,42 +313,29 @@ class Agent_Hitman:
         """
         On regarde si la matrice est complète ou non, on recherche le premier élément inconnu
         """
-        for i in range(self.max_L):
-            for j in range(self.max_C):
-                if self.mat_connue[i][j] == self.unknown:
-                    return True
-        return False
+        return any(self.unknown in row for row in self.mat_connue)
 
-    def est_sur_bord(self, position : Tuple[int, int]):
+    def est_sur_bord(self, position : PS) -> bool:
         bord_haut = self.max_L-1
         bord_bas = 0
         bord_gauche = 0
         bord_droit = self.max_C-1
         x, y = position
-        return x == bord_haut or x == bord_bas or y == bord_gauche or y == bord_droit
+        return x in (bord_haut, bord_bas) or y in (bord_gauche, bord_droit)
 
 
-    def helicoptere(self):
+    def helicoptere(self) -> None:
         """
             On tourne autour de nous si ça vaut le coup
-        """         
-    
-        self.voir()
-        self.info_actuelle = self.oracle.turn_clockwise()
-        self.voir()
-        self.info_actuelle = self.oracle.turn_clockwise()
-        self.voir()
-        self.info_actuelle = self.oracle.turn_clockwise()
-        self.voir()
-        self.info_actuelle = self.oracle.turn_clockwise()
-        self.voir()
-        
+        """     
 
-
+        for _ in range(4):
+            self.voir()
+            self.info_actuelle = self.oracle.turn_clockwise()
+            print(self)
         
-
         
-    def inconnue_plus_proche(self):
+    def inconnue_plus_proche(self) -> Tuple[int, int, int]:
         """
         Methode pour trouver le unkown le plus proche.
         """
@@ -375,15 +363,14 @@ class Agent_Hitman:
                 nx, ny = x + dx, y + dy
 
                 # Vérifier si la case voisine est valide et non visitée
-                if self.check_coord(nx,ny) and self.mat_connue[x][ny] != wall and not visite[nx][ny]:
-                    #print("nx : ", nx, "ny : ", ny)
+                if self.check_coord(nx,ny) and self.mat_connue[nx][ny] != wall and not visite[nx][ny]:
                     visite[nx][ny] = True
                     file_attente.append((nx, ny, distance + 1))
 
         # Aucun point trouvé
         return None
     
-    def bfs_shortest_path_v2(self, start, end):
+    def bfs_shortest_path(self, start, end) -> LP:
         visited = [[False] * self.max_C for _ in range(self.max_L)]
         queue = deque([(start, [])])
         
@@ -411,60 +398,8 @@ class Agent_Hitman:
                         queue.append(((new_row, new_col), path + [current]))
                         
         return None
-        
     
-    def bfs_shortest_path(self, start, end):
-        """
-            Trouve un chemin pour aller jusqu'à end. 
-            Ne fonctionne pas encore. Sûrement un problème lié 
-            aux translations.
-        """
-        queue = deque()
-        visited = [[False] * self.max_C for _ in range(self.max_L)]
-        parent = [[None] * self.max_C for _ in range(self.max_L)]
-
-
-        queue.append(start)
-        visited[start[0]][start[1]] = True
-
-        while queue:
-            current = queue.popleft()
-            
-            if current == end:
-                break
-
-            row, col = current
-
-            neighbors = [
-                (row-1, col), 
-                (row, col+1), 
-                (row+1, col), 
-                (row, col-1)
-                ]
-            
-            for neighbor in neighbors:
-                n_row, n_col = neighbor
-
-                if self.check_coord(self.translate_ligne(n_row),n_col) and self.mat_connue[self.translate_ligne(n_row)][n_col] != wall and not visited[n_row][n_col]:
-                    #print("n_row : ", n_row, "n_col : ", n_col)
-                    visited[n_row][n_col] = True
-                    parent[n_row][n_col] = current
-                    queue.append(neighbor)
-
-
-        if not visited[end[0]][end[1]]:
-            return None
-        
-        path = []
-        current = start
-        while current:
-            path.append(current)
-            current = parent[current[0]][current[1]]
-
-        print(path)
-        return list(reversed(path))
-    
-    def coords_case_devant_nous(self) -> Tuple[int, int]:
+    def coords_case_devant_nous(self) -> PS:
         """
             Renvoie les coords de la case devant nous selon notre direction.
         """
@@ -483,7 +418,7 @@ class Agent_Hitman:
             return self.translate_ligne(self._x), self._y-1
         
 
-    def rotation(self, next : Tuple[int, int]):
+    def rotation(self, next : PS) -> None:
         """
             Tourne dans la direction donnée pour qu'on puisse avancer sur la case next.
         """
@@ -496,7 +431,7 @@ class Agent_Hitman:
             self.voir()
             case_devant_nous = self.coords_case_devant_nous()                
     
-    def first_move(self):
+    def first_move(self) -> None:
         """
         Hitman se déplace pour la première fois vers un emplacement empty.
         """
@@ -518,7 +453,7 @@ class Agent_Hitman:
         
         self.move()            
         
-    def move(self):
+    def move(self) -> None:
         """
         Gère le déplacement d'Hitman
         """
@@ -527,9 +462,51 @@ class Agent_Hitman:
         self.voir()
         self._x = self.info_actuelle["position"][1]
         self._y = self.info_actuelle["position"][0]
+        print(self)
         
+    def convert(self, var) -> HC:
+        if var == empty:
+            return HC.EMPTY
+        elif var == wall:
+            return HC.WALL
+        elif var == GardeEst:
+            return HC.GUARD_E
+        elif var == GardeNord:
+            return HC.GUARD_N
+        elif var == GardeOuest:
+            return HC.GUARD_W
+        elif var == GardeSud:
+            return HC.GUARD_S
+        elif var == InviteEst:
+            return HC.CIVIL_E
+        elif var == InviteNord:
+            return HC.CIVIL_N
+        elif var == InviteOuest:
+            return HC.CIVIL_W
+        elif var == InviteSud:
+            return HC.CIVIL_S
+        elif var == Costume:
+            return HC.SUIT
+        elif var == Target:
+            return HC.TARGET
+        elif var == Corde:
+            return HC.PIANO_WIRE
+        else:
+            raise ValueError("Valeur inconnue : " + str(var))
+            
+        
+    def conversion_mat_connue(self) -> Dict[Tuple[int, int], HC]:
+        """
+        Convertit la matrice connue en matrice de HC.
+        """
+        mat = {}
+        for i in range(self.max_L):
+            for j in range(self.max_C):
+                convert_x = self.max_L - i -1                
+                mat[(j, convert_x)] = self.convert(self.mat_connue[i][j])
+        return mat
     
-    def phase_1(self):
+    def phase_1(self) -> None:
         """
         On fait un tour de jeu du hitman.
         """
@@ -543,10 +520,8 @@ class Agent_Hitman:
         self.entendre()
         self.helicoptere()        
         self.first_move()
-        print(self)
         
         self.helicoptere()
-        print(self)
         
         queue_action = deque()
         actual_target = None
@@ -554,11 +529,9 @@ class Agent_Hitman:
         while self.incomplete_mat():
             if len(queue_action) == 0:
                 nearest_unknown = self.inconnue_plus_proche()
-                print("nearest_unknown : ", nearest_unknown)
                 actual_target = (nearest_unknown[0], nearest_unknown[1])
-                path_temp = self.bfs_shortest_path_v2((self.translate_ligne(self._x), self._y), (nearest_unknown[0], nearest_unknown[1]))
+                path_temp = self.bfs_shortest_path((self.translate_ligne(self._x), self._y), (nearest_unknown[0], nearest_unknown[1]))
                 path_temp.pop(0) # On enlève la case sur laquelle on est
-                print("path_temp : ", path_temp)
                 for coord in path_temp:
                     queue_action.append(coord)
             else:
@@ -573,7 +546,6 @@ class Agent_Hitman:
                         self.info_actuelle = self.oracle.turn_clockwise()
                         self.voir()
 
-                        #self.helicoptere()
                     else:
                         # On s'y dirige
                         case_devant_nous = self.coords_case_devant_nous()
@@ -595,13 +567,11 @@ class Agent_Hitman:
                     self.gophersat.invite_max_trouve()
 
                     
-            print(self)              
+        print(self)
         print("penalites : ", self.info_actuelle["penalties"])
-
-def main():
-    Hitman1 = Agent_Hitman()
-    Hitman1.phase_1()
-
-
-if __name__ == "__main__":
-    main()
+        mat_hitman = self.conversion_mat_connue()
+        print(mat_hitman)
+        if self.oracle.send_content(mat_hitman):
+            print("Victoire !")
+        else:
+            print("Défaite !Mais c'est impossible !")        
