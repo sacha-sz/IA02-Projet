@@ -573,5 +573,8 @@ class Agent_Hitman:
         print(mat_hitman)
         if self.oracle.send_content(mat_hitman):
             print("Victoire !")
+            print("--------------------")
+            print("\tFin de la phase 1")
+            print("--------------------")
         else:
             print("Défaite !Mais c'est impossible !")        
