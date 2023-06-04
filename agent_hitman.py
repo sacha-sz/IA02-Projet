@@ -91,15 +91,6 @@ class Agent_Hitman:
             if info.startswith("G"):
                 self.add_vision_garde(ligne, colonne)
             
-            if self.gardesTousTrouves():
-                self.gophersat.invite_max_trouve()
-                
-            if self.invitesTousTrouves():
-                self.gophersat.garde_max_trouve()
-                
-            if self.gardesTousTrouves() and self.invitesTousTrouves():
-                self.gophersat.personne_max_trouve()
-
         else:
             print("Erreur : les coordonnées sont hors de la matrice\nAucune information n'a été ajoutée")
 
