@@ -28,6 +28,8 @@ class Agent_Hitman:
 
         self.loc_gardes = set()
         self.loc_invites = set()
+        self.invitesTrouves = False
+        self.gardesTrouves = False
 
 
     def __str__(self):
@@ -206,7 +208,7 @@ class Agent_Hitman:
         """
         Demande à gophersat s'il y a la présence d'une personne.
         """
-        res = self.gophersat.test_personne((self._x, self._y, Personne))
+        res = self.gophersat.test_personne((x,y, Personne))
         if res == 0:
             pass
 
@@ -229,22 +231,22 @@ class Agent_Hitman:
             elif self.mat_connue[ligne][colonne] == GardeSud:
                 for i in range(1, 3):
                     if ligne + i < self.max_L:
-                        self.mat_regard[ligne + i][colonne] += 1
+                        self.mat_regard[ligne + i][colonne] += 5
 
             elif self.mat_connue[ligne][colonne] == GardeNord:
                 for i in range(1, 3):
                     if ligne - i >= 0:
-                        self.mat_regard[ligne - i][colonne] += 1
+                        self.mat_regard[ligne - i][colonne] += 5
 
             elif self.mat_connue[ligne][colonne] == GardeEst:
                 for i in range(1, 3):
                     if colonne + i < self.max_C:
-                        self.mat_regard[ligne][colonne + i] += 1
+                        self.mat_regard[ligne][colonne + i] += 5
 
             elif self.mat_connue[ligne][colonne] == GardeOuest:
                 for i in range(1, 3):
                     if colonne - i >= 0:
-                        self.mat_regard[ligne][colonne - i] += 1
+                        self.mat_regard[ligne][colonne - i] += 5
             else:
                 print("Ce n'est pas un garde qui est en (" + str(ligne) + ", " + str(colonne) + ")")
         else:
@@ -281,7 +283,7 @@ class Agent_Hitman:
                                 if vision_bloque:
                                     self.mat_regard[i - v][j] = 0
 
-                    elif self.mat_connue[i][j].endswith("E"):
+                    elif self.mat_connue[i][j] == GardeEst:
                         for v in range(1, MAX_VISION_GARDE+1):
                             if j + v < self.max_C:
 
@@ -291,7 +293,7 @@ class Agent_Hitman:
                                 if vision_bloque:
                                     self.mat_regard[i][j + v] = 0
 
-                    elif self.mat_connue[i][j].endswith("O"):
+                    elif self.mat_connue[i][j] == GardeOuest:
                         for v in range(1, MAX_VISION_GARDE+1):
 
                             if j - v >= 0:
@@ -339,6 +341,11 @@ class Agent_Hitman:
         self.voir()
         self.info_actuelle = self.oracle.turn_clockwise()
         self.voir()
+        
+
+
+        
+
         
     def inconnue_plus_proche(self):
         """
@@ -555,14 +562,18 @@ class Agent_Hitman:
                 for coord in path_temp:
                     queue_action.append(coord)
             else:
-                # On vérifie si on a pas déjà vu la case d'objectif
+                # On vérifie si on n'a pas déjà vu la case d'objectif
                 if self.mat_connue[actual_target[0]][actual_target[1]] == self.unknown: 
                     # On regarde la prochaine action à faire
                     next_action = queue_action.popleft()
                     
                     if next_action[0] == actual_target[0] and next_action[1] == actual_target[1]:
                         # On est arrivé à la case cible
-                        self.helicoptere()
+                        self.voir()
+                        self.info_actuelle = self.oracle.turn_clockwise()
+                        self.voir()
+
+                        #self.helicoptere()
                     else:
                         # On s'y dirige
                         case_devant_nous = self.coords_case_devant_nous()
@@ -574,6 +585,15 @@ class Agent_Hitman:
                         self.move()
                 else:
                     queue_action.clear()
+
+                if not self.gardesTrouves and self.gardesTousTrouves():
+                    self.gardesTrouves = True
+                    self.gophersat.garde_max_trouve()
+                
+                if not self.invitesTrouves and self.invitesTousTrouves():
+                    self.gardesTrouves = True
+                    self.gophersat.invite_max_trouve()
+
                     
             print(self)              
         print("penalites : ", self.info_actuelle["penalties"])
