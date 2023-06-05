@@ -426,6 +426,8 @@ class Agent_Hitman:
         """
         Hitman se déplace pour la première fois vers un emplacement empty.
         """
+        self.entendre()
+        self.voir()
         
         deltas = [(-1, 0), (0, 1), (1, 0), (0, -1)]
         pos_x = self.translate_ligne(self._x)
@@ -434,15 +436,17 @@ class Agent_Hitman:
         for delta in deltas:
             if self.check_coord(pos_x + delta[0], self._y + delta[1]) and self.mat_connue[pos_x + delta[0]][self._y + delta[1]] == empty:
                 pos_possible.append((pos_x + delta[0], self._y + delta[1]))
-        
-        if len(pos_possible) == 0:
-            return
-        
-        while self.coords_case_devant_nous() not in pos_possible:
+        # On se tourne en sens horaire jusqu'à ce qu'on trouve une case empty
+        while len(pos_possible) == 0:
+            print("On tourne")
             self.info_actuelle = self.oracle.turn_clockwise()
             self.voir()
+            for delta in deltas:
+                if self.check_coord(pos_x + delta[0], self._y + delta[1]) and self.mat_connue[pos_x + delta[0]][self._y + delta[1]] == empty:
+                    pos_possible.append((pos_x + delta[0], self._y + delta[1]))
         
-        self.move()            
+        # On est bien tourné vers une case empty
+        self.move()    
         
     def move(self) -> None:
         """
@@ -508,11 +512,8 @@ class Agent_Hitman:
         
 
         # Phase 1 : on fait l'hélicoptère puis on se déplace sur une case empty
-        self.entendre()
-        self.helicoptere()        
         self.first_move()
         
-        self.helicoptere()
         
         queue_action = deque()
         actual_target = None
