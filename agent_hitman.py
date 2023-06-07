@@ -2,6 +2,7 @@ from variables import *
 from hitman import *
 from gophersat import *
 from collections import deque
+import heapq
 
 class Agent_Hitman:
     def __init__(self):
@@ -343,6 +344,67 @@ class Agent_Hitman:
         # Aucun point trouvé
         return None
     
+    def reconstruct_path(self, came_from, current):
+        path = []
+        while current in came_from:
+            path.append(current)
+            current = came_from[current]
+        return path[::-1]
+    
+
+    def calculate_heuristic(self, current, goal):
+        # Manhattan distance heuristic
+        return abs(current[0] - goal[0]) + abs(current[1] - goal[1])
+    
+    def get_neighbours(self, position):
+        neighbours = []
+        directions = [(0, 1), (0, -1), (1, 0), (-1, 0)]  # Right, Left, Down, Up
+
+        for direction in directions:
+            new_row = position[0] + direction[0]
+            new_col = position[1] + direction[1]
+
+            if self.check_coord(new_row, new_col) and self.mat_connue[new_row][new_col] != wall and \
+                self.mat_connue[new_row][new_col] != Garde and \
+                self.mat_connue[new_row][new_col] != GardeEst and \
+                self.mat_connue[new_row][new_col] != GardeNord and \
+                self.mat_connue[new_row][new_col] != GardeOuest and \
+                self.mat_connue[new_row][new_col] != GardeSud:
+                neighbours.append((new_row, new_col))
+
+        return neighbours
+    
+    def A_star(self, start: Tuple[int, int], goal : Tuple[int, int]):
+        """
+            Algorithme A_star. Prend la postion de départ et la position d'arrivée.
+            Renvoie le chemin à suivre pour aller de la position de départ à la position d'arrivée.
+            Suppose que start et goal on déjà eu leur translate_ligne.
+        """
+        open_list = []
+        heapq.heappush(open_list, (0, start))
+        came_from = {}
+        g_score = {start: 0}
+        f_score = {start: self.calculate_heuristic(start, goal)}
+
+        while open_list:
+            _, current = heapq.heappop(open_list)
+
+            if current == goal:
+                return self.reconstruct_path(came_from, current)
+
+            neighbours = self.get_neighbours(current)
+            for neighbour in neighbours:
+                cost = self.mat_regard[neighbour[0]][neighbour[1]]
+                tentative_g_score = g_score[current] + cost
+
+                if neighbour not in g_score or tentative_g_score < g_score[neighbour]:
+                    came_from[neighbour] = current
+                    g_score[neighbour] = tentative_g_score
+                    f_score[neighbour] = tentative_g_score + self.calculate_heuristic(neighbour, goal)
+                    heapq.heappush(open_list, (f_score[neighbour], neighbour))
+
+        return None
+    
     def bfs_shortest_path(self, start, end) -> LP:
         visited = [[False] * self.max_C for _ in range(self.max_L)]
         queue = deque([(start, [])])
@@ -504,11 +566,14 @@ class Agent_Hitman:
             if len(queue_action) == 0:
                 nearest_unknown = self.inconnue_plus_proche()
                 actual_target = (nearest_unknown[0], nearest_unknown[1])
-                path_temp = self.bfs_shortest_path((self.translate_ligne(self._x), self._y), (nearest_unknown[0], nearest_unknown[1]))
-                path_temp.pop(0) # On enlève la case sur laquelle on est
-                for coord in path_temp:
+                #path_temp = self.bfs_shortest_path((self.translate_ligne(self._x), self._y), (nearest_unknown[0], nearest_unknown[1]))
+                #path_temp.pop(0) # On enlève la case sur laquelle on est
+                a_star_path = self.A_star((self.translate_ligne(self._x), self._y), (nearest_unknown[0], nearest_unknown[1]))
+                #print("A* path : ", a_star_path)
+                #a_star_path.pop(0) # On enlève la case sur laquelle on est
+                for coord in a_star_path:
                     queue_action.append(coord)
-                print(path_temp)
+                #print(path_temp)
             else:
                 # On vérifie si on n'a pas déjà vu la case d'objectif
                 if self.mat_connue[actual_target[0]][actual_target[1]] == self.unknown: 
