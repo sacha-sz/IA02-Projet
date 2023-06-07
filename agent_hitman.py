@@ -43,19 +43,17 @@ class Agent_Hitman:
         for i in range(self.max_L):
             row_str = '|'
             for j in range(self.max_C):
+                element = self.mat_connue[i][j]
                 if self.translate_ligne(self._x) == i and self._y == j:
-                    element = self.mat_connue[i][j] + " H"
-                    if self.info_actuelle["orientation"] == HC.N:
-                        element += "\u2191"
-                    elif self.info_actuelle["orientation"] == HC.S:
-                        element += "\u2193"
-                    elif self.info_actuelle["orientation"] == HC.E:
-                        element += "\u2192"
-                    elif self.info_actuelle["orientation"] == HC.W:
-                        element += "\u2190"
-                    element_str = element.center(max_length)
-                else:
-                    element_str = self.mat_connue[i][j].center(max_length)
+                    element += " H"
+                    orientation_dict = {
+                        HC.N: "\u2191",
+                        HC.S: "\u2193",
+                        HC.E: "\u2192",
+                        HC.W: "\u2190"
+                    }
+                    element += orientation_dict.get(self.info_actuelle["orientation"], "")
+                element_str = element.center(max_length)
                 row_str += f' {element_str} |'
             output.append(row_str)
             output.append(border)
@@ -86,13 +84,10 @@ class Agent_Hitman:
         ligne = self.translate_ligne(ligne)
         if self.check_coord(ligne, colonne):
             self.mat_connue[ligne][colonne] = info
-
+            
             # Si garde on ajoute sa vision
             if info.startswith("G"):
                 self.add_vision_garde(ligne, colonne)
-            
-        else:
-            print("Erreur : les coordonnées sont hors de la matrice\nAucune information n'a été ajoutée")
 
     def gardesTousTrouves(self) -> bool:
         return len(self.loc_gardes) == self.nb_gardes
@@ -244,8 +239,7 @@ class Agent_Hitman:
                         self.mat_regard[ligne][colonne - i] += 5
             else:
                 print("Ce n'est pas un garde qui est en (" + str(ligne) + ", " + str(colonne) + ")")
-        else:
-            print("Erreur : les coordonnées sont hors de la matrice\nAucune information n'a été ajoutée")
+                
         self.verif_vision()
 
     def verif_vision(self) -> None:
@@ -297,9 +291,6 @@ class Agent_Hitman:
                                 if vision_bloque:
                                     self.mat_regard[i][j - v] = 0
 
-                    else:
-                        print("Erreur : le garde en (" + str(i) + ", " + str(j) + ") n'a pas de direction")
-
     def incomplete_mat(self) -> bool:
         """
         On regarde si la matrice est complète ou non, on recherche le premier élément inconnu
@@ -313,17 +304,6 @@ class Agent_Hitman:
         bord_droit = self.max_C-1
         x, y = position
         return x in (bord_haut, bord_bas) or y in (bord_gauche, bord_droit)
-
-
-    def helicoptere(self) -> None:
-        """
-            On tourne autour de nous si ça vaut le coup
-        """     
-
-        for _ in range(4):
-            self.voir()
-            self.info_actuelle = self.oracle.turn_clockwise()
-            print(self)
         
         
     def inconnue_plus_proche(self) -> Tuple[int, int, int]:
@@ -347,6 +327,8 @@ class Agent_Hitman:
             
             # Vérifier si la case actuelle est inconnue
             if self.mat_connue[x][y] == self.unknown:
+                print("Position hitman : ", self.translate_ligne(self._x), self._y)
+                print("Nearest unknown point : ", x, y)
                 return (x, y, distance)
 
             # Explorer les cases voisines
@@ -526,6 +508,7 @@ class Agent_Hitman:
                 path_temp.pop(0) # On enlève la case sur laquelle on est
                 for coord in path_temp:
                     queue_action.append(coord)
+                print(path_temp)
             else:
                 # On vérifie si on n'a pas déjà vu la case d'objectif
                 if self.mat_connue[actual_target[0]][actual_target[1]] == self.unknown: 

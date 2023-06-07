@@ -53,15 +53,14 @@ class Gophersat:
         A partir des positions environnantes, on ajoute les clauses pour que le nombre de personnages entendus soit égal à nb_ouie
         """
         if nb_ouie < 0 or nb_ouie > len(lp):
-            print("Je fais rien car j'entends rien")
+            return
+        
         elif nb_ouie == 0:
-            print("Je n'entends personne")
             for t in lp:
                 self.clauses.append([-self.dVar[(t[0], t[1], "P")]])
                 self.nClauses += 1
+                
         elif nb_ouie < BROUHAHA:
-            print("Je peux entendre", nb_ouie, "personnes avec certitude")
-
             # Liste des litteraux correspondant aux triplets (i, j, "P")
             liste_litteraux = []
             for t in lp:
@@ -79,8 +78,6 @@ class Gophersat:
             self.write_file()
 
         else:
-            print("Je peux entendre entre ", nb_ouie,
-                    "et", len(lp), "personnes")
             liste_triplet = []  # Liste des triplets au format (i, j, "P")
             for t in lp:
                 liste_triplet.append((t[0], t[1], "P"))
