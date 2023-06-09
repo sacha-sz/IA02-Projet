@@ -607,12 +607,23 @@ class Agent_Hitman:
         actual_target = None
 
         while self.incomplete_mat():
+            for ngb in self.get_neighbours((self.translate_ligne(self._x), self._y)):
+                if self.mat_connue[ngb[0]][ngb[1]] == self.unknown:
+                    self.best_turn(ngb[0], ngb[1])
+            
             if len(queue_action) == 0:
                 nearest_unknown = self.inconnue_plus_proche() 
-                actual_target = (nearest_unknown[0][0], nearest_unknown[0][1])
+                pos_nu = []
+                for nu in nearest_unknown:
+                    pos_nu.append((nu[0], nu[1]))
+                print("Inconnue la plus proche : " + str(pos_nu))
+                actual_target = pos_nu[0]
                     
-                a_star_path = self.A_star((self.translate_ligne(
-                    self._x), self._y), (nearest_unknown[0][0], nearest_unknown[0][1]))
+                print("Target : " + str(actual_target))
+                    
+                a_star_path = self.A_star((self.translate_ligne(self._x), self._y), (pos_nu[0]))
+                
+                print("A* : " + str(a_star_path))
                 for coord in a_star_path:
                     queue_action.append(coord)                
                 
@@ -639,7 +650,6 @@ class Agent_Hitman:
             if not self.incomplete_mat():
                 break
 
-        print(self)
         print("penalites : ", self.info_actuelle["penalties"])
 
         self.oracle.send_content(self.conversion_mat_connue())
