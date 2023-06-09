@@ -28,16 +28,18 @@ Costume = "C"
 Corde = "R"
 Target = "T"
 
-Personne = "P"
-
-Garde = "G"
 GardeNord = "G" + "\u2191"
 GardeSud = "G" + "\u2193"
 GardeEst = "G" + "\u2192"
 GardeOuest = "G" + "\u2190"
 
-Invite = "I"
 InviteNord = "I" + "\u2191"
 InviteSud = "I" + "\u2193"
 InviteEst = "I" + "\u2192"
 InviteOuest = "I" + "\u2190"
+
+# Variables pour SAT
+SAT_GARDE = "G"
+SAT_INVITE = "I"
+SAT_PERSONNE = "P"
+SAT_NP = " "
