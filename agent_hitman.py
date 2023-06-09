@@ -36,6 +36,7 @@ class Agent_Hitman:
         self.loc_invites = set()
         self.invitesTrouves = False
         self.gardesTrouves = False
+        self.phase1 = True
 
     def __str__(self):
         """
@@ -173,7 +174,7 @@ class Agent_Hitman:
                 certitudes.append((pos_vision_x, pos_vision_y, "N"))
                 self.ajout_info_mat(pos_vision_x, pos_vision_y, empty)
 
-            elif v[1] in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
+            elif v[1] in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W] and (pos_vision_x, pos_vision_y) not in self.loc_gardes:
                 certitudes.append((pos_vision_x, pos_vision_y, "G"))
                 self.loc_gardes.add((pos_vision_x, pos_vision_y))
                 if v[1] == HC.GUARD_N:
@@ -667,4 +668,29 @@ class Agent_Hitman:
         self.oracle.send_content(self.conversion_mat_connue())
         _, score, history, true_map = self.oracle.end_phase1()
         print(score)
-    
+        self.phase1 = False
+        print("matrice regard : ")
+        for l in self.mat_regard:
+            print(l)
+
+
+    def find_stg(self, stg : str) -> Tuple[int, int]:
+        for i in range(len(self.mat_connue)):
+            for j in range(len(self.mat_connue[i])):
+                if self.mat_connue[i][j] == stg:
+                    return (i,j)
+
+    def phase_2(self):
+        #Trouver le chemin qui coûte le minimum entre les chemins suivants : 
+        # -chemin de la case départ à la case costume puis de la case costume à la case arme puis
+        # de la case arme à la case cible
+        # -chemin de le case départ à la case arme puis de la case arme à la case cible
+        target_pos = self.find_stg(Target)
+        costume_pos = self.find_stg(Costume)
+        corde_pos = self.find_stg(Corde)
+
+        path_costume = self.A_star((self.translate_ligne(self._x), self._y), (self.translate_ligne(costume_pos[0]), costume_pos[1]))
+        print("path costume : ", path_costume)
+
+
+        self.info_actuelle = self.oracle.start_phase2()
