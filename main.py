@@ -9,9 +9,13 @@ def main():
 
     hitman = Agent_Hitman()
 
-    # On lance la phase 1 et on regarde sa durée d'exécution
-    start = time.time()
-    hitman.phase_1()
+    # On demande à l'utilisateur s'il souhaite utiliser SAT ou non
+    if input("Voulez-vous utiliser SAT ? (y/n) ") == "y":
+        start = time.time()
+        hitman.phase_1(True)
+    else:
+        start = time.time()
+        hitman.phase_1()
     end = time.time()
     print("Durée de la phase 1 : " + str(end - start) + " secondes")
 
