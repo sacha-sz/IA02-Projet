@@ -749,6 +749,54 @@ class Agent_Hitman:
         elif chemin == 4:
             return chemin_4
 
+    def is_seen(self) -> bool:
+        """
+
+        Permet de savoir si nous sommes dans le champ de vision d'un garde ou d'un invité
+
+        """
+
+        for loc in self.loc_invites:  # Une case
+            ngb = self.get_neighbours((loc[0], loc[1]))
+            if (self.translate_ligne(self._x), self._y) in ngb:
+                return True
+
+        for loc in self.loc_gardes:  # Deux cases dans sa direction
+            vision_bloque = False
+            i = loc[0]
+            j = loc[1]
+
+            for v in range(1, MAX_VISION_GARDE + 1):
+                if self.mat_connue[i][j] == GardeSud and i + v < self.max_L:
+                    if self.mat_connue[i + v][j] != empty and self.mat_connue[i + v][j] != self.unknown:
+                        vision_bloque = True
+
+                    if (self.translate_ligne(self._x), self._y) == (i + v, j) and not vision_bloque:
+                        return True
+
+                if self.mat_connue[i][j] == GardeNord and i - v >= 0:
+                    if self.mat_connue[i - v][j] != empty and self.mat_connue[i - v][j] != self.unknown:
+                        vision_bloque = True
+
+                    if (self.translate_ligne(self._x), self._y) == (i - v, j) and not vision_bloque:
+                        return True
+
+                if self.mat_connue[i][j] == GardeEst and j + v < self.max_C:
+                    if self.mat_connue[i][j + v] != empty and self.mat_connue[i][j + v] != self.unknown:
+                        vision_bloque = True
+
+                    if (self.translate_ligne(self._x), self._y) == (i, j + v) and not vision_bloque:
+                        return True
+
+                if self.mat_connue[i][j] == GardeOuest and j - v >= 0:
+                    if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != self.unknown:
+                        vision_bloque = True
+
+                    if (self.translate_ligne(self._x), self._y) == (i, j - v) and not vision_bloque:
+                        return True
+
+        return False
+
     def phase_2(self):
         print("--------------------")
         print("\tPhase 2")
@@ -763,6 +811,8 @@ class Agent_Hitman:
         print("chemin : ", chemin)
         if not chemin:
             return
+
+        possede_costume = False
 
         queue_action = deque()
         for coord in chemin:
@@ -781,11 +831,15 @@ class Agent_Hitman:
 
             elif self.mat_connue[self.translate_ligne(self._x)][self._y] == Costume:
                 self.oracle.take_suit()
+                possede_costume = True
                 self.mat_connue[self.translate_ligne(self._x)][self._y] = empty
 
             elif self.mat_connue[self.translate_ligne(self._x)][self._y] == Target:
                 self.oracle.kill_target()
                 self.mat_connue[self.translate_ligne(self._x)][self._y] = DEAD
+
+            if possede_costume and not self.is_seen():
+                self.oracle.put_on_suit()
 
             print(self)
 
