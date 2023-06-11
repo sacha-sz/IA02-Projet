@@ -694,71 +694,60 @@ class Agent_Hitman:
         x_init, y_init = self.translate_ligne(self._x), self._y
 
         target_pos = self.find_stg(Target)
-        target_pos = (target_pos[0], target_pos[1])
         costume_pos = self.find_stg(Costume)
-        costume_pos = self.costume_pos = (costume_pos[0], costume_pos[1])
-        print("costume pos : ", costume_pos)
-
         corde_pos = self.find_stg(Corde)
-        corde_pos = (corde_pos[0], corde_pos[1])
 
-        # Regarder les cas :
-        # 1. aller jusqu'au costume puis à la corde puis à la cible
-        # 2. aller jusqu'à la corde puis au costume puis à la cible
-        # 3. aller jusqu'à la corde puis à la cible
+        couts_chemins = {i: 0 for i in range(1, 4)}
 
-        # Revenir de la cible au point de départ
-        path_cib_to_init = self.a_star((target_pos[0], target_pos[1]), (x_init, y_init))
+        # Listing des différents chemin pour aller jusqu'à la cible
+        # - 1 : init -> costume -> corde -> cible -> init
+        # - 2 : init -> corde -> costume -> cible -> init
+        # - 3 : init -> corde -> cible -> costume -> init
+        # - 4 : init -> corde -> cible -> init
 
-        # Dictionnaire pour savoir le coût de chaque chemin. Ne prend en compte que le coût des déplacements
-        couts_chemins = {i: len(path_cib_to_init) for i in range(1, 4)}
-
-        # Cas 1 : aller jusqu'au costume puis à la corde puis à la cible
-        path_costume = self.a_star((x_init, y_init), (costume_pos[0], costume_pos[1]))
-
-        print("path costume : ", path_costume)
+        # ---------------------------- 1 ----------------------------
+        path_init_costume = self.a_star((x_init, y_init), (costume_pos[0], costume_pos[1]))
         path_cos_to_cord = self.a_star((costume_pos[0], costume_pos[1]), (corde_pos[0], corde_pos[1]))
-
-        print("path cos to cord : ", path_cos_to_cord)
         path_cord_to_cib = self.a_star((corde_pos[0], corde_pos[1]), (target_pos[0], target_pos[1]))
-        print("path cord to cib : ", path_cord_to_cib)
+        path_cib_to_init = self.a_star((target_pos[0], target_pos[1]), (x_init, y_init))
+        chemin_1 = path_init_costume + path_cos_to_cord + path_cord_to_cib + path_cib_to_init
+        couts_chemins[1] = len(chemin_1)
 
-        couts_chemins[1] += len(path_costume) + len(path_cos_to_cord) + len(path_cord_to_cib) + len(path_cib_to_init)
+        # ---------------------------- 2 ----------------------------
+        path_init_corde = self.a_star((x_init, y_init), (corde_pos[0], corde_pos[1]))
+        path_corde_cos = self.a_star((corde_pos[0], corde_pos[1]), (costume_pos[0], costume_pos[1]))
+        path_cos_cib = self.a_star((costume_pos[0], costume_pos[1]), (target_pos[0], target_pos[1]))
+        chemin_2 = path_init_corde + path_corde_cos + path_cos_cib + path_cib_to_init
+        couts_chemins[2] = len(chemin_2)
 
-        # aller jusqu'à la corde puis au costume puis à la cible
-        path_cord = self.a_star((x_init, y_init), (corde_pos[0], corde_pos[1]))
-        path_cord_to_cos = self.a_star((corde_pos[0], corde_pos[1]), (costume_pos[0], costume_pos[1]))
-        path_cos_to_cib = self.a_star((costume_pos[0], costume_pos[1]), (target_pos[0], target_pos[1]))
+        # ---------------------------- 3 ----------------------------
+        path_cord_cib = self.a_star((corde_pos[0], corde_pos[1]), (target_pos[0], target_pos[1]))
+        path_cib_cos = self.a_star((target_pos[0], target_pos[1]), (costume_pos[0], costume_pos[1]))
+        path_cos_init = self.a_star((costume_pos[0], costume_pos[1]), (x_init, y_init))
+        chemin_3 = path_init_corde + path_cord_cib + path_cib_cos + path_cos_init
+        couts_chemins[3] = len(chemin_3)
 
-        couts_chemins[2] += len(path_cord) + len(path_cord_to_cos) + len(path_cord_to_cib) + len(path_cib_to_init)
+        # ---------------------------- 4 ----------------------------
+        chemin_4 = path_init_corde + path_cord_cib + path_cib_to_init
+        couts_chemins[4] = len(chemin_4)
 
-        # aller jusqu'à la corde puis à la cible
-        path_cord2 = self.a_star((x_init, y_init), (corde_pos[0], corde_pos[1]))
-        path_cord_to_cib = self.a_star((corde_pos[0], corde_pos[1]), (target_pos[0], target_pos[1]))
-        couts_chemins[3] += len(path_cord2) + len(path_cord_to_cib) + len(path_cib_to_init)
-
+        # ---------------------------- INFO ----------------------------
         print("couts chemins : ")
         for k, v in couts_chemins.items():
             print(k, v)
 
         # On prend le chemin le plus court
         chemin = min(couts_chemins, key=couts_chemins.get)
-        print("chemin : ", chemin)
+        print("Shortest path : ", chemin)
 
         if chemin == 1:
-            return path_costume + path_cos_to_cord + path_cord_to_cib + [
-                (target_pos[0], target_pos[1])] + path_cib_to_init
-
+            return chemin_1
         elif chemin == 2:
-            return path_cord + path_cord_to_cos + path_cos_to_cib + [
-                (target_pos[0], target_pos[1])] + path_cib_to_init
-
+            return chemin_2
         elif chemin == 3:
-            print("path_cord2 : ", path_cord2)
-            print("path_cord_to_cib : ", path_cord_to_cib)
-            print("path_cib_to_init : ", path_cib_to_init)
-            return path_cord2 + path_cord_to_cib + [
-                (target_pos[0], target_pos[1])] + path_cib_to_init
+            return chemin_3
+        elif chemin == 4:
+            return chemin_4
 
     def phase_2(self):
         print("--------------------")
@@ -769,7 +758,6 @@ class Agent_Hitman:
         self._x = self.info_actuelle["position"][1]
         self._y = self.info_actuelle["position"][0]
         print(self)
-        print("self._x : ", self._x, "self._y : ", self._y)
 
         chemin = self.get_shortest_path_phase2()
         print("chemin : ", chemin)
@@ -782,24 +770,24 @@ class Agent_Hitman:
 
         while len(queue_action) != 0:
             next_action = queue_action.popleft()
-            print("x, y : ", self._x, self._y)
-            print("next action : ", next_action)
-            print("direction", self.info_actuelle["orientation"])
-
             self.best_turn(next_action[0], next_action[1])
-            print("x, y : ", self._x, self._y)
-            print("next action : ", next_action)
-            print("direction", self.info_actuelle["orientation"])
-            self.oracle.move()
+            self.info_actuelle = self.oracle.move()
+            self._x = self.info_actuelle["position"][1]
+            self._y = self.info_actuelle["position"][0]
 
             if self.mat_connue[self.translate_ligne(self._x)][self._y] == Corde:
                 self.oracle.take_weapon()
+                self.mat_connue[self.translate_ligne(self._x)][self._y] = empty
 
             elif self.mat_connue[self.translate_ligne(self._x)][self._y] == Costume:
                 self.oracle.take_suit()
+                self.mat_connue[self.translate_ligne(self._x)][self._y] = empty
 
             elif self.mat_connue[self.translate_ligne(self._x)][self._y] == Target:
                 self.oracle.kill_target()
+                self.mat_connue[self.translate_ligne(self._x)][self._y] = DEAD
+
+            print(self)
 
         _, score, history = self.oracle.end_phase2()
         print("score : ", score)

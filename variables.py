@@ -26,7 +26,9 @@ empty = " " # "E"
 wall = "\u2588" + "\u2588" + "\u2588" + "\u2588" # "W"
 Costume = "C"
 Corde = "R"
+
 Target = "T"
+DEAD = "X"
 
 GardeNord = "G" + "\u2191"
 GardeSud = "G" + "\u2193"
