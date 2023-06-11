@@ -716,6 +716,7 @@ class Agent_Hitman:
         cost = 0
         has_suit = False 
         suit_on = False
+        print("path : ", path)
         for coord in path:
             cost += 1
             if not suit_on:
@@ -867,6 +868,8 @@ class Agent_Hitman:
         print("--------------------")
         print("\tPhase 2")
         print("--------------------")
+        #Correction temporaire
+        self.sat = False #Si le sat est à True les trajets de a_start son modifiés.
 
         self.info_actuelle = self.oracle.start_phase2()
         self._x = self.info_actuelle["position"][1]
