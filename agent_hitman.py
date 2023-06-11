@@ -351,6 +351,10 @@ class Agent_Hitman:
                                 vision_bloque = True
 
                             if vision_bloque:
+                                #Sur la case de la target on ne reduit pas le cout car on peut la tuer
+                                #Et si on est vu sur cette case en train de tuer on prend une pénalité.
+                                if self.mat_connue[i + v][j] == Target: 
+                                    continue
                                 self.mat_regard[i + v][j] = max(0, self.mat_regard[i + v][j] - 5)
                                 if self.sat:
                                     self.sat_regard[i + v][j] = max(0, self.sat_regard[i + v][j] - 1)
@@ -361,6 +365,8 @@ class Agent_Hitman:
                                 vision_bloque = True
 
                             if vision_bloque:
+                                if self.mat_connue[i - v][j] == Target:
+                                    continue
                                 self.mat_regard[i - v][j] = max(0, self.mat_regard[i - v][j] - 5)
                                 if self.sat:
                                     self.sat_regard[i - v][j] = max(0, self.sat_regard[i - v][j] - 1)
@@ -371,6 +377,8 @@ class Agent_Hitman:
                                 vision_bloque = True
 
                             if vision_bloque:
+                                if self.mat_connue[i][j + v] == Target:
+                                    continue
                                 self.mat_regard[i][j + v] = max(0, self.mat_regard[i][j + v] - 5)
                                 if self.sat:
                                     self.sat_regard[i][j + v] = max(0, self.sat_regard[i][j + v] - 1)
@@ -380,6 +388,8 @@ class Agent_Hitman:
                                 vision_bloque = True
 
                             if vision_bloque:
+                                if self.mat_connue[i][j - v] == Target:
+                                    continue
                                 self.mat_regard[i][j - v] = max(0, self.mat_regard[i][j - v] - 5)
                                 if self.sat:
                                     self.sat_regard[i][j - v] = max(0, self.sat_regard[i][j - v] - 1)
@@ -458,7 +468,7 @@ class Agent_Hitman:
         # print("neighbours: ", neighbours)
         return neighbours
 
-    def a_star(self, start: Tuple[int, int], goal: Tuple[int, int]):
+    def a_star(self, start: Tuple[int, int], goal: Tuple[int, int], costume: bool = False):
         """
             Algorithme A_star. Prend la postion de départ et la position d'arrivée.
             Renvoie le chemin à suivre pour aller de la position de départ à la position d'arrivée.
@@ -483,6 +493,8 @@ class Agent_Hitman:
                     cost = self.sat_regard[neighbour[0]][neighbour[1]]
                 else:
                     cost = self.mat_regard[neighbour[0]][neighbour[1]]
+                if costume:
+                    cost = 0
                 tentative_g_score = g_score[current] + cost
 
                 if neighbour not in g_score or tentative_g_score < g_score[neighbour]:
@@ -689,6 +701,41 @@ class Agent_Hitman:
             for j in range(len(self.mat_connue[i])):
                 if self.mat_connue[i][j] == stg:
                     return i, j
+                
+    def cost_path(self, path : List[Tuple[int, int]]):
+
+        """
+
+            Methode pour calculer le cout d'un chemin. On prend en compte :
+            - Le cout de chaque déplacement
+            - Le cout lorsqu'on est vu en train de mettre le costume
+            - Le cout lorsqu'on passe devant un garde sans costume
+            - Le cout lorsqu'on tue la cible sans costume et qu'on est vu
+
+        """
+        cost = 0
+        has_suit = False 
+        suit_on = False
+        for coord in path:
+            cost += 1
+            if not suit_on:
+                cost += self.mat_regard[coord[0]][coord[1]] #Cout des regards des gardes
+
+            if self.mat_connue[coord[0]][coord[1]] == Costume:
+                    has_suit = True
+
+            if self.mat_regard[coord[0]][coord[1]] == 0: 
+                #On met uniquement si on n'est pas vu. A modifier car 
+                #On risque de ne jamais mettre le costume dans certains cas s'il ne faut jamais être vu.
+                if has_suit:
+                    suit_on = True
+
+            if self.mat_connue[coord[0]][coord[1]] == Target:
+                if not suit_on:
+                    cost += (self.mat_regard[coord[0]][coord[1]]//5) * 100
+                cost += 1 #On Tue donc un cout en plus
+
+        return cost
 
     def get_shortest_path_phase2(self):
         x_init, y_init = self.translate_ligne(self._x), self._y
@@ -705,31 +752,43 @@ class Agent_Hitman:
         # - 3 : init -> corde -> cible -> costume -> init
         # - 4 : init -> corde -> cible -> init
 
+        #A prendre en compte :
+        # - Si on nous voit passer le costume on prend cher
+        # - Si on nous prendre tuer la cible sans costume on prend cher.
+
         # ---------------------------- 1 ----------------------------
-        path_init_costume = self.a_star((x_init, y_init), (costume_pos[0], costume_pos[1]))
+        
+        path_init_costume = self.a_star((x_init, y_init), (costume_pos[0], costume_pos[1])) 
+        
         path_cos_to_cord = self.a_star((costume_pos[0], costume_pos[1]), (corde_pos[0], corde_pos[1]))
         path_cord_to_cib = self.a_star((corde_pos[0], corde_pos[1]), (target_pos[0], target_pos[1]))
         path_cib_to_init = self.a_star((target_pos[0], target_pos[1]), (x_init, y_init))
         chemin_1 = path_init_costume + path_cos_to_cord + path_cord_to_cib + path_cib_to_init
-        couts_chemins[1] = len(chemin_1)
+        #couts_chemins[1] = len(chemin_1)
+        couts_chemins[1] = self.cost_path(chemin_1)
 
         # ---------------------------- 2 ----------------------------
         path_init_corde = self.a_star((x_init, y_init), (corde_pos[0], corde_pos[1]))
         path_corde_cos = self.a_star((corde_pos[0], corde_pos[1]), (costume_pos[0], costume_pos[1]))
         path_cos_cib = self.a_star((costume_pos[0], costume_pos[1]), (target_pos[0], target_pos[1]))
         chemin_2 = path_init_corde + path_corde_cos + path_cos_cib + path_cib_to_init
-        couts_chemins[2] = len(chemin_2)
+        #couts_chemins[2] = len(chemin_2)
+        couts_chemins[2] = self.cost_path(chemin_2)
 
         # ---------------------------- 3 ----------------------------
         path_cord_cib = self.a_star((corde_pos[0], corde_pos[1]), (target_pos[0], target_pos[1]))
         path_cib_cos = self.a_star((target_pos[0], target_pos[1]), (costume_pos[0], costume_pos[1]))
         path_cos_init = self.a_star((costume_pos[0], costume_pos[1]), (x_init, y_init))
         chemin_3 = path_init_corde + path_cord_cib + path_cib_cos + path_cos_init
-        couts_chemins[3] = len(chemin_3)
+        #couts_chemins[3] = len(chemin_3)
+        couts_chemins[3] = self.cost_path(chemin_3)
 
         # ---------------------------- 4 ----------------------------
+        path_cord_cib = self.a_star((corde_pos[0], corde_pos[1]), (target_pos[0], target_pos[1]))
+        path_cib_to_init = self.a_star((target_pos[0], target_pos[1]), (x_init, y_init))
         chemin_4 = path_init_corde + path_cord_cib + path_cib_to_init
-        couts_chemins[4] = len(chemin_4)
+        #couts_chemins[4] = len(chemin_4)
+        couts_chemins[4] = self.cost_path(chemin_4)
 
         # ---------------------------- INFO ----------------------------
         print("couts chemins : ")
@@ -796,6 +855,13 @@ class Agent_Hitman:
                         return True
 
         return False
+    
+    def path_cost(self, path : List[Tuple[int, int]]) -> int:
+        cost = 0
+        for coord in path:
+            cost += 1
+            cost += self.mat_regard[coord[0]][coord[1]]
+        return cost
 
     def phase_2(self):
         print("--------------------")
