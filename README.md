@@ -105,35 +105,35 @@ EFFECT: Orientation(nord)
 
 * Action(avancer(x, y, x+1, y),
 PRECOND: Orientation(actuelle) = nord ∧ Avance_possible(x+1, y),
-EFFECT: Position(Hitman, x+1, y)
+EFFECT: Position(Hitman, x+1, y), ¬Position(Hitman, x, y)
 )
 
 * Action(avancer(x, y, x-1, y),
 PRECOND: Orientation(actuelle) = sud ∧ Avance_possible(x-1, y),
-EFFECT: Position(Hitman, x-1, y)
+EFFECT: Position(Hitman, x-1, y), ¬Position(Hitman, x, y)
 )
 
 * Action(avancer(x, y, x, y+1),
 PRECOND: Orientation(actuelle) = est ∧ Avance_possible(x, y+1),
-EFFECT: Position(Hitman, x, y+1)
+EFFECT: Position(Hitman, x, y+1), ¬Position(Hitman, x, y)
 )
 
 * Action(avancer(x, y, x, y-1),
 PRECOND: Orientation(actuelle) = ouest ∧ Avance_possible(x, y-1),
-EFFECT: Position(Hitman, x, y-1)
+EFFECT: Position(Hitman, x, y-1), ¬Position(Hitman, x, y)
 )
 
 * Action(tuer_cible,
 PRECOND: Position(Hitman, x, y) ∧ Sur_case(cible, x, y) ∧ Possède(corde_de_piano),
-EFFECT: ¬Sur_case(cible, x, y)
+EFFECT: ¬Sur_case(cible, x, y), ¬Position(Hitman, x, y)
 )
 
 * Action(neutraliser_garde,
-PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x, y) ∧ ¬Regarde(vous, garde) ∧ Case_vide(x, y+1),
+PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x, y) ∧ ¬Regarde(vous, garde),
 EFFECT: ¬Garde_present(Garde, x, y) ∧ Case_vide(x, y+1)
 )
 
 * Action(neutraliser_civil,
-PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x, y) ∧ ¬Regarde(vous, civil) ∧ Case_vide(x, y+1),
-EFFECT: ¬Civil_present(Civil, x, y) ∧ Case_vide(x, y+1)
+PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x, y) ∧ ¬Regarde(vous, civil),
+EFFECT: ¬Civil_present(Civil, x, y)
 )
