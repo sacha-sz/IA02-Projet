@@ -63,8 +63,9 @@ Goal(
 )
 
 ##### Actions 
-* Actions (manque les actions pour le costume et l'arme) : 
-    Action(tourner_horaire,
+ Actions (manque les actions pour le costume et l'arme) : 
+    
+* Action(tourner_horaire,
     PRECOND: Orientation(actuelle) = nord,
     EFFECT: Orientation(est)
     )
