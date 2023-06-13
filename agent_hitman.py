@@ -155,9 +155,15 @@ class Agent_Hitman:
             self.verif_vision()
 
     def gardes_tous_trouves(self) -> bool:
+        """
+        On vérifie si on a trouvé tous les gardes
+        """
         return len(self.loc_gardes) == self.nb_gardes
 
     def invites_tous_trouves(self) -> bool:
+        """
+        On vérifie si on a trouvé tous les invités
+        """
         return len(self.loc_invites) == self.nb_invites
 
     def check_coord(self, ligne, colonne) -> bool:
@@ -181,7 +187,6 @@ class Agent_Hitman:
         """
         if not self.sat:
             return
-        print(self)
         nb_ouie = self.info_actuelle["hear"]
         pos_ngb = [(x[0], x[1]) for x in self.generate_neighboors(self.translate_ligne(self._x), self._y)]
 
