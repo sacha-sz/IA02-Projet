@@ -86,11 +86,12 @@ class Agent_Hitman:
         Affichage de la matrice des connaissances de l'agent
         """
         max_length = 4
-        border = '+' + '-' * ((max_length + 2) * self.max_C + self.max_L) + '+'
+        border = '-' * (len(str(self.max_L)) + 1)
+        border += '+' + '-' * ((max_length + 2) * self.max_C + self.max_L) + '+'
         output = [border]
 
         for i in range(self.max_L):
-            row_str = '|'
+            row_str = f'{str(self.translate_ligne(i)).rjust(len(str(self.max_L)))} |'
             for j in range(self.max_C):
                 element = self.mat_connue[i][j]
                 if self.translate_ligne(self._x) == i and self._y == j:
@@ -106,6 +107,13 @@ class Agent_Hitman:
                 row_str += f' {element_str} |'
             output.append(row_str)
             output.append(border)
+
+        ligne_col = ' ' * (len(str(self.max_L)) + 1) + '|'
+        for i in range(self.max_C):
+            ligne_col += f' {str(i).center(max_length)} |'
+        output.append(ligne_col)
+        output.append("\n")
+
 
         return '\n'.join(output)
 
