@@ -117,13 +117,10 @@ class Agent_Hitman:
 
         for change_ligne in range(-MAX_OUIE, MAX_OUIE + 1):
             for change_col in range(-MAX_OUIE, MAX_OUIE + 1):
-                if indice_ligne + change_ligne < 0 or indice_ligne + change_ligne >= self.max_L or \
-                        indice_colonne + change_col < 0 or indice_colonne + change_col >= self.max_C:
-                    continue
-
                 liste_voisins.append(
                     [indice_ligne + change_ligne, indice_colonne + change_col])
 
+        liste_voisins = [voisin for voisin in liste_voisins if self.check_coord(voisin[0], voisin[1])]
         return liste_voisins
 
     def ajout_info_mat(self, ligne: int, colonne: int, info: str) -> None:
@@ -177,30 +174,33 @@ class Agent_Hitman:
         """
         if not self.sat:
             return
-        x = self.translate_ligne(self._x)
-        neighbors = self.generate_neighboors(x, self._y)
+        print(self)
         nb_ouie = self.info_actuelle["hear"]
+        pos_ngb = [(x[0], x[1]) for x in self.generate_neighboors(self.translate_ligne(self._x), self._y)]
+
+        self.gophersat.ajout_clauses_entendre(pos_ngb, nb_ouie)
 
         # Si on entend moins de BROUHAHA personnes, on regarde si on a déjà localisé des gens dans cette zone
-        if nb_ouie < BROUHAHA:
-            unknown_pos = []
-            for pos in neighbors:
-                if self.mat_connue[pos[0]][pos[1]] == self.unknown:
-                    unknown_pos.append((pos[0], pos[1]))
-                elif self.mat_connue[pos[0]][pos[1]] == GardeEst or \
-                        self.mat_connue[pos[0]][pos[1]] == GardeOuest or \
-                        self.mat_connue[pos[0]][pos[1]] == GardeNord or \
-                        self.mat_connue[pos[0]][pos[1]] == GardeSud or \
-                        self.mat_connue[pos[0]][pos[1]] == InviteEst or \
-                        self.mat_connue[pos[0]][pos[1]] == InviteOuest or \
-                        self.mat_connue[pos[0]][pos[1]] == InviteNord or \
-                        self.mat_connue[pos[0]][pos[1]] == InviteSud:
-                    nb_ouie -= 1
-
-            self.gophersat.ajout_clauses_entendre(unknown_pos, nb_ouie)
-        else:
-            ngb = [(x[0], x[1]) for x in neighbors]
-            self.gophersat.ajout_clauses_entendre(ngb, nb_ouie)
+        # if nb_ouie < BROUHAHA:
+        #     unknown_pos = []
+        #     for pos in neighbors:
+        #         if self.mat_connue[pos[0]][pos[1]] == self.unknown:
+        #             unknown_pos.append((pos[0], pos[1]))
+        #         elif self.mat_connue[pos[0]][pos[1]] == GardeEst or \
+        #                 self.mat_connue[pos[0]][pos[1]] == GardeOuest or \
+        #                 self.mat_connue[pos[0]][pos[1]] == GardeNord or \
+        #                 self.mat_connue[pos[0]][pos[1]] == GardeSud or \
+        #                 self.mat_connue[pos[0]][pos[1]] == InviteEst or \
+        #                 self.mat_connue[pos[0]][pos[1]] == InviteOuest or \
+        #                 self.mat_connue[pos[0]][pos[1]] == InviteNord or \
+        #                 self.mat_connue[pos[0]][pos[1]] == InviteSud:
+        #             nb_ouie -= 1
+        #     print("Entendre : ", unknown_pos, nb_ouie)
+        #     self.gophersat.ajout_clauses_entendre(unknown_pos, nb_ouie)
+        # else:
+        #     ngb = [(x[0], x[1]) for x in neighbors]
+        #     print("Entendre : ", ngb, nb_ouie)
+        #     self.gophersat.ajout_clauses_entendre(ngb, nb_ouie)
 
     def voir(self) -> None:
         """
@@ -234,6 +234,9 @@ class Agent_Hitman:
                 elif v[1] == HC.GUARD_W:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, GardeOuest)
 
+            elif v[1] in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
+                certitudes.append((pos_vision_x, pos_vision_y, "G"))
+
             elif v[1] in [HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E, HC.CIVIL_W]:
                 certitudes.append((pos_vision_x, pos_vision_y, "I"))
                 self.loc_invites.add((pos_vision_x, pos_vision_y))
@@ -263,7 +266,8 @@ class Agent_Hitman:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, Target)
 
         if self.sat:
-            self.gophersat.ajout_clauses_voir(certitudes)
+            new_certitudes = [(self.translate_ligne(x[0]), x[1], x[2]) for x in certitudes]
+            self.gophersat.ajout_clauses_voir(new_certitudes)
 
     def test(self, x: int, y: int) -> None:
         """
@@ -465,7 +469,6 @@ class Agent_Hitman:
                     self.mat_connue[new_row][new_col] != GardeOuest and \
                     self.mat_connue[new_row][new_col] != GardeSud:
                 neighbours.append((new_row, new_col))
-        # print("neighbours: ", neighbours)
         return neighbours
 
     def a_star(self, start: Tuple[int, int], goal: Tuple[int, int], costume: bool = False):
@@ -474,7 +477,6 @@ class Agent_Hitman:
             Renvoie le chemin à suivre pour aller de la position de départ à la position d'arrivée.
             Suppose que start et goal on déjà eu leur translate_ligne.
         """
-        # print("start: ", start, "goal: ", goal)
         open_list = []
         heapq.heappush(open_list, (0, start))
         came_from = {}
@@ -550,10 +552,10 @@ class Agent_Hitman:
         Gère le déplacement d'Hitman
         """
         self.info_actuelle = self.oracle.move()
-        self.entendre()
-        self.voir()
         self._x = self.info_actuelle["position"][1]
         self._y = self.info_actuelle["position"][0]
+        self.voir()
+        self.entendre()
 
     def turn(self, clockwise: bool = True) -> None:
         """
