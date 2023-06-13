@@ -68,69 +68,71 @@ Goal(
     PRECOND: Orientation(actuelle) = nord,
     EFFECT: Orientation(est)
     )
-*Action(tourner_horaire,
+* Action(tourner_horaire,
 PRECOND: Orientation(actuelle) = est,
 EFFECT: Orientation(sud)
 )
-*Action(tourner_horaire,
+* Action(tourner_horaire,
 PRECOND: Orientation(actuelle) = sud,
 EFFECT: Orientation(ouest)
 )
 
-*Action(tourner_horaire,
+* Action(tourner_horaire,
 PRECOND: Orientation(actuelle) = ouest,
 EFFECT: Orientation(nord)
 )
 
-*Action(tourner_antihoraire,
+* Action(tourner_antihoraire,
 PRECOND: Orientation(actuelle) = nord,
 EFFECT: Orientation(ouest)
 )
-*Action(tourner_antihoraire,
+
+* Action(tourner_antihoraire,
 PRECOND: Orientation(actuelle) = ouest,
 EFFECT: Orientation(sud)
 )
-*Action(tourner_antihoraire,
+
+* Action(tourner_antihoraire,
 PRECOND: Orientation(actuelle) = sud,
 EFFECT: Orientation(est)
 )
 
-*Action(tourner_antihoraire,
+* Action(tourner_antihoraire,
 PRECOND: Orientation(actuelle) = est,
 EFFECT: Orientation(nord)
 )
 
-*Action(avancer(x, y, x+1, y),
+* Action(avancer(x, y, x+1, y),
 PRECOND: Orientation(actuelle) = nord ∧ Avance_possible(x+1, y),
 EFFECT: Position(Hitman, x+1, y)
 )
 
-*Action(avancer(x, y, x-1, y),
+* Action(avancer(x, y, x-1, y),
 PRECOND: Orientation(actuelle) = sud ∧ Avance_possible(x-1, y),
 EFFECT: Position(Hitman, x-1, y)
 )
 
-*Action(avancer(x, y, x, y+1),
+* Action(avancer(x, y, x, y+1),
 PRECOND: Orientation(actuelle) = est ∧ Avance_possible(x, y+1),
 EFFECT: Position(Hitman, x, y+1)
 )
 
-*Action(avancer(x, y, x, y-1),
+* Action(avancer(x, y, x, y-1),
 PRECOND: Orientation(actuelle) = ouest ∧ Avance_possible(x, y-1),
 EFFECT: Position(Hitman, x, y-1)
 )
 
-*Action(tuer_cible,
+* Action(tuer_cible,
 PRECOND: Position(Hitman, x, y) ∧ Sur_case(cible, x, y) ∧ Possède(corde_de_piano),
 EFFECT: ¬Sur_case(cible, x, y)
 )
 
-*Action(neutraliser_garde,
+* Action(neutraliser_garde,
 PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x, y) ∧ ¬Regarde(vous, garde) ∧ Case_vide(x, y+1),
 EFFECT: ¬Garde_present(Garde, x, y) ∧ Case_vide(x, y+1)
 )
 
-*Action(neutraliser_civil,
+* Action(neutraliser_civil,
 PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x, y) ∧ ¬Regarde(vous, civil) ∧ Case_vide(x, y+1),
 EFFECT: ¬Civil_present(Civil, x, y) ∧ Case_vide(x, y+1)
 )
