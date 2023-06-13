@@ -4,18 +4,21 @@
 Ce projet a été réalisé dans le cadre de l'UV IA02 à l'UTC.
 Binôme : Lucas, Sacha.
 Le projet consiste à permettre à l'agent Hitman de se déplacer dans une map 2D pour tuer une cible.
-Au début Hitman ne connait même pas la map. Il doit l'explorer.
-Nous disposons d'une matrice des regards qui indique dans quelles directions regardent les gardes et civils 
-qu'on a trouvé.
-Nous avons aussi une matrice de connaissance qui contient toutes les informations sur la map qu'on a découvert.
+Au début Hitman ne connait pas la map. Il doit l'explorer.
+Nous disposons d'une matrice des regards (attribut ```self.mat_regard```) qui indique dans quelles directions regardent les gardes et civils qu'on a trouvé.
+Nous avons aussi une matrice de connaissance (attribut ```self.mat_connue```) qui contient toutes les informations sur la map qu'on a découvert.
 L'objectif est réalisé en deux phases : 
 
 ### Phase 1 :
 L'agent doit se déplacer dans la map pour découvrir toute la map.
 On utilise pour cela du SAT.
 
-On explore la map en trouvant l'inconnu le plus proche et l'agent essaye de se rapprocher de cette case
-en utilisant l'algorithme A*.
+On explore la map en trouvant l'inconnu le plus proche et l'agent essaye de se rapprocher de cette case pour la voir.
+Le chemin est généré en utilisant l'algorithme A*. On prend en compte les regards des gardes si on les connait déjà. On prend bien-sûr en compte le coup des déplacements.
+
+Pour avancer il faut être bien orienté. La case où on veut aller doit être devant nous.
+Des rotations peuvent donc être nécessaire. Une methode, ```best_turn```, permet de s'orienter vers la case
+en faisant le moins de rotations possibles.
 
 
 
