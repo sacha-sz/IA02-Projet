@@ -114,7 +114,6 @@ class Agent_Hitman:
         output.append(ligne_col)
         output.append("\n")
 
-
         return '\n'.join(output)
 
     def generate_neighboors(self, indice_ligne: int, indice_colonne: int) -> LC:
@@ -186,29 +185,24 @@ class Agent_Hitman:
         nb_ouie = self.info_actuelle["hear"]
         pos_ngb = [(x[0], x[1]) for x in self.generate_neighboors(self.translate_ligne(self._x), self._y)]
 
-        self.gophersat.ajout_clauses_entendre(pos_ngb, nb_ouie)
-
         # Si on entend moins de BROUHAHA personnes, on regarde si on a déjà localisé des gens dans cette zone
-        # if nb_ouie < BROUHAHA:
-        #     unknown_pos = []
-        #     for pos in neighbors:
-        #         if self.mat_connue[pos[0]][pos[1]] == self.unknown:
-        #             unknown_pos.append((pos[0], pos[1]))
-        #         elif self.mat_connue[pos[0]][pos[1]] == GardeEst or \
-        #                 self.mat_connue[pos[0]][pos[1]] == GardeOuest or \
-        #                 self.mat_connue[pos[0]][pos[1]] == GardeNord or \
-        #                 self.mat_connue[pos[0]][pos[1]] == GardeSud or \
-        #                 self.mat_connue[pos[0]][pos[1]] == InviteEst or \
-        #                 self.mat_connue[pos[0]][pos[1]] == InviteOuest or \
-        #                 self.mat_connue[pos[0]][pos[1]] == InviteNord or \
-        #                 self.mat_connue[pos[0]][pos[1]] == InviteSud:
-        #             nb_ouie -= 1
-        #     print("Entendre : ", unknown_pos, nb_ouie)
-        #     self.gophersat.ajout_clauses_entendre(unknown_pos, nb_ouie)
-        # else:
-        #     ngb = [(x[0], x[1]) for x in neighbors]
-        #     print("Entendre : ", ngb, nb_ouie)
-        #     self.gophersat.ajout_clauses_entendre(ngb, nb_ouie)
+        if nb_ouie < BROUHAHA:
+            unknown_pos = []
+            for pos in self.generate_neighboors(self.translate_ligne(self._x), self._y):
+                if self.mat_connue[pos[0]][pos[1]] == self.unknown:
+                    unknown_pos.append((pos[0], pos[1]))
+                elif self.mat_connue[pos[0]][pos[1]] == GardeEst or \
+                        self.mat_connue[pos[0]][pos[1]] == GardeOuest or \
+                        self.mat_connue[pos[0]][pos[1]] == GardeNord or \
+                        self.mat_connue[pos[0]][pos[1]] == GardeSud or \
+                        self.mat_connue[pos[0]][pos[1]] == InviteEst or \
+                        self.mat_connue[pos[0]][pos[1]] == InviteOuest or \
+                        self.mat_connue[pos[0]][pos[1]] == InviteNord or \
+                        self.mat_connue[pos[0]][pos[1]] == InviteSud:
+                    nb_ouie -= 1
+            self.gophersat.ajout_clauses_entendre(unknown_pos, nb_ouie)
+        else:
+            self.gophersat.ajout_clauses_entendre(pos_ngb, nb_ouie)
 
     def voir(self) -> None:
         """
