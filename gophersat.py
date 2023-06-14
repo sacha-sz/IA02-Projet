@@ -3,11 +3,39 @@ from variables import *
 from itertools import combinations
 
 
+def at_least_n(n: int, liste_litteraux: List[int]):
+    clauses = set()
+    for c in combinations(liste_litteraux, len(liste_litteraux) - (n - 1)):
+        clauses.add(tuple(c))
+    return clauses
+
+
+def at_most_n(n: int, liste_litteraux: List[int]):
+    clauses = set()
+    vars_neg = [i * -1 for i in liste_litteraux]
+    for c in combinations(vars_neg, n + 1):
+        clauses.add(tuple(c))
+    return clauses
+
+
+def exactly_n(n: int, liste_litteraux: List[int]):
+    if not liste_litteraux:
+        return []
+    if n == 0:
+        return at_most_n(0, liste_litteraux)
+    elif n == len(liste_litteraux):
+        return at_least_n(n, liste_litteraux)
+    clauses = at_most_n(n, liste_litteraux)
+    for cl in at_least_n(n, liste_litteraux):
+        clauses.add(cl)
+    return clauses
+
+
 class Gophersat:
     def __init__(self, nb_ligne: int, nb_colonnes: int):
         self.nLitteraux = nb_colonnes * nb_ligne * len(ELEMENTS_TUILE)
         self.nClauses = 0
-        self.clauses: List[List[int]] = []
+        self.clauses: set[tuple[int] | tuple[int, int, int] | tuple[int, int] | int] = set()
         self.pos_connues: List[Tuple[int, int]] = []
         self.pos_inconnues: List[Tuple[int, int]] = []
 
@@ -26,44 +54,21 @@ class Gophersat:
         # Initialisation des clauses pour qu’il y ait au moins un personnage par case et d’un seul type
         for i in range(nb_ligne):
             for j in range(nb_colonnes):
-                self.clauses.append(
-                    [-self.dVar[(i, j, "P")], self.dVar[(i, j, "G")], self.dVar[(i, j, "I")]])
-                self.clauses.append(
-                    [self.dVar[(i, j, "P")], -self.dVar[(i, j, "G")]])
-                self.clauses.append(
-                    [self.dVar[(i, j, "P")], -self.dVar[(i, j, "I")]])
+                self.clauses.add((-self.dVar[(i, j, "P")], self.dVar[(i, j, "G")], self.dVar[(i, j, "I")]))
+                self.clauses.add((self.dVar[(i, j, "P")], -self.dVar[(i, j, "G")]))
+                self.clauses.add((self.dVar[(i, j, "P")], -self.dVar[(i, j, "I")]))
                 self.nClauses += 3
+
         self.write_file()
 
     def write_file(self, file_name: str = FILENAME, test: bool = False) -> None:
         with open(file_name, "w") as f:
             f.write(f"p cnf {self.nLitteraux} {self.nClauses + int(test)}\n")
             for clause in self.clauses:
-                f.write(" ".join(str(litteral) for litteral in clause) + " 0\n")
-
-    def at_least_n(self, n: int, vars: List[int]):
-        clauses = []
-        for c in combinations(vars, len(vars) - (n - 1)):
-            clauses.append(list(c))
-        return clauses
-
-    def at_most_n(self, n: int, vars: List[int]):
-        clauses = []
-        varsNeg = [i * -1 for i in vars]
-        for c in combinations(varsNeg, n + 1):
-            clauses.append(list(c))
-        return clauses
-
-    def exactly_n(self, n: int, vars: List[int]):
-        if vars == []:
-            return []
-        if n == 0:
-            return self.at_most_n(0, vars)
-        if n == len(vars):
-            return self.at_least_n(n, vars)
-        clauses = self.at_most_n(n, vars)
-        clauses += self.at_least_n(n, vars)
-        return clauses
+                if type(clause) == int:
+                    f.write(str(clause) + " 0\n")
+                elif type(clause) == tuple:
+                    f.write(" ".join(str(litteral) for litteral in clause) + " 0\n")
 
     def ajout_clauses_entendre(self, lp: List[Tuple[int, int]], nb_ouie: int) -> None:
         """
@@ -76,21 +81,22 @@ class Gophersat:
 
         elif nb_ouie == 0:
             for t in lp:
-                self.clauses.append([-self.dVar[(t[0], t[1], "P")]])
-                self.clauses.append([-self.dVar[(t[0], t[1], "G")]])
-                self.clauses.append([-self.dVar[(t[0], t[1], "I")]])
+                self.clauses.add((-self.dVar[(t[0], t[1], "P")]))
+                self.clauses.add((-self.dVar[(t[0], t[1], "G")]))
+                self.clauses.add((-self.dVar[(t[0], t[1], "I")]))
                 self.nClauses += 3
 
         elif nb_ouie < BROUHAHA:
             # Au moins et au plus nb_ouie personnages
-            clause_exactly = self.exactly_n(nb_ouie, [self.dVar[(t[0], t[1], "P")] for t in lp])
-            self.clauses += clause_exactly
+            clause_exactly = exactly_n(nb_ouie, [self.dVar[(t[0], t[1], "P")] for t in lp])
+            for clause in clause_exactly:
+                self.clauses.add(clause)
             self.nClauses += len(clause_exactly)
 
-
         else:
-            clauses_at_least = self.at_least_n(BROUHAHA, [self.dVar[(t[0], t[1], "P")] for t in lp])
-            self.clauses += clauses_at_least
+            clauses_at_least = at_least_n(BROUHAHA, [self.dVar[(t[0], t[1], "P")] for t in lp])
+            for clause in clauses_at_least:
+                self.clauses.add(clause)
             self.nClauses += len(clauses_at_least)
 
         self.write_file()
@@ -104,21 +110,22 @@ class Gophersat:
             self.pos_inconnues = [pos for pos in self.pos_inconnues if pos not in self.pos_connues]
 
             if t[2] == 'G':
-                self.clauses.append([self.dVar[(t[0], t[1], "G")]])
-                self.clauses.append([self.dVar[(t[0], t[1], "P")]])
-                self.clauses.append([-self.dVar[(t[0], t[1], "I")]])
+                self.clauses.add((self.dVar[(t[0], t[1], "G")]))
+                self.clauses.add((self.dVar[(t[0], t[1], "P")]))
+                self.clauses.add((-self.dVar[(t[0], t[1], "I")]))
 
                 self.nClauses += 3
             elif t[2] == 'I':
-                self.clauses.append([self.dVar[(t[0], t[1], "I")]])
-                self.clauses.append([self.dVar[(t[0], t[1], "P")]])
-                self.clauses.append([-self.dVar[(t[0], t[1], "G")]])
+                self.clauses.add((self.dVar[(t[0], t[1], "I")]))
+                self.clauses.add((self.dVar[(t[0], t[1], "P")]))
+                self.clauses.add((-self.dVar[(t[0], t[1], "G")]))
                 self.nClauses += 3
             else:
-                self.clauses.append([-self.dVar[(t[0], t[1], "P")]])
-                self.clauses.append([-self.dVar[(t[0], t[1], "G")]])
-                self.clauses.append([-self.dVar[(t[0], t[1], "I")]])
+                self.clauses.add((-self.dVar[(t[0], t[1], "P")]))
+                self.clauses.add((-self.dVar[(t[0], t[1], "G")]))
+                self.clauses.add((-self.dVar[(t[0], t[1], "I")]))
                 self.nClauses += 3
+
         self.write_file()
 
     def invite_max_trouve(self) -> None:
@@ -126,8 +133,9 @@ class Gophersat:
         On a trouvé le nombre maximum d’invités et on ajoute dans les clauses que les autres cases ne le sont pas
         """
         for t in self.pos_inconnues:
-            self.clauses.append([-self.dVar[(t[0], t[1], "I")]])
+            self.clauses.add((-self.dVar[(t[0], t[1], "I")]))
             self.nClauses += 1
+
         self.write_file()
 
     def garde_max_trouve(self) -> None:
@@ -135,8 +143,9 @@ class Gophersat:
         On a trouvé le nombre maximum de gardes et on ajoute dans les clauses que les autres cases ne le sont pas
         """
         for t in self.pos_inconnues:
-            self.clauses.append([-self.dVar[(t[0], t[1], "G")]])
+            self.clauses.add((-self.dVar[(t[0], t[1], "G")]))
             self.nClauses += 1
+
         self.write_file()
 
     def personne_max_trouve(self) -> None:
@@ -144,8 +153,9 @@ class Gophersat:
         On a trouvé le nombre maximum de personnes et on ajoute dans les clauses que les autres cases ne le sont pas
         """
         for t in self.pos_inconnues:
-            self.clauses.append([-self.dVar[(t[0], t[1], "P")]])
+            self.clauses.add((-self.dVar[(t[0], t[1], "P")]))
             self.nClauses += 1
+
         self.write_file()
 
     def test_personne(self, pos_test: Tuple[int, int]) -> int:
