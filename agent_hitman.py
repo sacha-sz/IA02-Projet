@@ -75,6 +75,7 @@ class Agent_Hitman:
         self.mat_connue = [[self.unknown] * self.max_C for _ in range(self.max_L)]
 
         self.mat_regard = [[0] * self.max_C for _ in range(self.max_L)]
+        self.mat_regard_invite = [[0] * self.max_C for _ in range(self.max_L)]
 
         self.loc_gardes = set()
         self.loc_invites = set()
@@ -144,6 +145,9 @@ class Agent_Hitman:
             if info.startswith("G"):
                 self.add_vision_garde(ligne, colonne)
 
+            if info.startswith("I"):
+                self.add_vision_invite(ligne, colonne)
+
             # On ajoute sur la matrice SAT
             if self.sat:
                 if info.startswith("G"):
@@ -154,6 +158,69 @@ class Agent_Hitman:
                     self.sat_connue[ligne][colonne] = SAT_NP
 
             self.verif_vision()
+            self.verif_vision_invite()
+
+    def add_vision_invite(self, ligne: int, colonne: int) -> None:
+        if self.check_coord(ligne, colonne):
+            if self.mat_connue[ligne][colonne] == InviteSud:
+                for i in range(1, MAX_VISION_INVITE + 1):
+                    if ligne + i < self.max_L:
+                        self.mat_regard_invite[ligne + i][colonne] += 1
+            elif self.mat_connue[ligne][colonne] == InviteNord:
+                print("invite regarde au nord")
+                for i in range(1, MAX_VISION_INVITE + 1):
+                    if ligne - i >= 0:
+                        self.mat_regard_invite[ligne - i][colonne] += 1
+            elif self.mat_connue[ligne][colonne] == InviteEst:
+                for i in range(1, MAX_VISION_INVITE + 1):
+                    if colonne + i < self.max_C:
+                        self.mat_regard_invite[ligne][colonne + i] += 1
+            elif self.mat_connue[ligne][colonne] == InviteOuest:
+                for i in range(1, MAX_VISION_INVITE + 1):
+                    if colonne - i >= 0:
+                        self.mat_regard_invite[ligne][colonne - i] += 1
+            else:
+                print("Ce n'est pas un invite qui est en (" + str(ligne) + ", " + str(colonne) + ")")
+
+        print("mat regarde appele dans vision invite")
+        for l in self.mat_regard:
+            print(l)
+
+    def verif_vision_invite(self):
+        for i in range(len(self.mat_regard_invite)):
+            for j in range(len(self.mat_regard_invite)):
+                if self.mat_connue[i][j].startswith("I"):
+                    vision_bloque = False
+                    for v in range(1, MAX_VISION_INVITE + 1):
+                        if self.mat_connue[i][j] == InviteSud and i + v < self.max_L:
+                            if self.mat_connue[i + v][j] != empty and self.mat_connue[i + v][j] != self.unknown:
+                                vision_bloque = True
+
+                            if vision_bloque:
+                                self.mat_regard_invite[i + v][j] = max(0, self.mat_regard_invite[i + v][j] - 1)
+
+                        elif self.mat_connue[i][j] == InviteNord and i - v >= 0:
+
+                            if self.mat_connue[i - v][j] != empty and self.mat_connue[i - v][j] != self.unknown:
+                                vision_bloque = True
+
+                            if vision_bloque:
+                                self.mat_regard_invite[i - v][j] = max(0, self.mat_regard_invite[i - v][j] - 1)
+
+                        elif self.mat_connue[i][j] == InviteEst and j + v < self.max_C:
+
+                            if self.mat_connue[i][j + v] != empty and self.mat_connue[i][j + v] != self.unknown:
+                                vision_bloque = True
+
+                            if vision_bloque:
+                                self.mat_regard_invite[i][j + v] = max(0, self.mat_regard_invite[i][j + v] - 1)
+
+                        elif self.mat_connue[i][j] == InviteOuest and j - v >= 0:
+                            if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != self.unknown:
+                                vision_bloque = True
+
+                            if vision_bloque:
+                                self.mat_regard_invite[i][j - v] = max(0, self.mat_regard_invite[i][j - v] - 1)
 
     def gardes_tous_trouves(self) -> bool:
         """
@@ -405,6 +472,8 @@ class Agent_Hitman:
                                 self.mat_regard[i][j - v] = max(0, self.mat_regard[i][j - v] - 5)
                                 if self.sat:
                                     self.sat_regard[i][j - v] = max(0, self.sat_regard[i][j - v] - 1)
+
+                
 
     def incomplete_mat(self) -> bool:
         """
@@ -729,6 +798,7 @@ class Agent_Hitman:
         suit_on = False
         print("path : ", path)
         mat_regard_copie = copy.deepcopy(self.mat_regard)
+        mat_regarde_invite_copie = copy.deepcopy(self.mat_regard_invite)
         mat_connue_copie = copy.deepcopy(self.mat_connue)
         
         for coord in path:
@@ -748,7 +818,8 @@ class Agent_Hitman:
                     target_pos = self.find_stg(Target)
                     for v in vision:
                         if v == target_pos:
-                            cost += 20*(mat_regard_copie[neighbour[0]][neighbour[1]]//5)
+                            cost += 20
+                            cost += 100*((mat_regard_copie[coord[0]][coord[1]]//5) + mat_regarde_invite_copie[coord[0]][coord[1]])
                             cost += 1 #On Tue donc un cout en plus
                             mat_connue_copie[neighbour[0]][neighbour[1]] = empty
                             for v2 in vision:
@@ -758,9 +829,12 @@ class Agent_Hitman:
                     target_pos = self.find_stg(Target)
                     for v in vision:
                         if v == target_pos:
-                            cost += 20*(mat_regard_copie[neighbour[0]][neighbour[1]]//5)
+                            cost += 20
+                            cost += 100*((mat_regard_copie[coord[0]][coord[1]]//5) + mat_regarde_invite_copie[coord[0]][coord[1]])
                             cost += 1
                             mat_connue_copie[neighbour[0]][neighbour[1]] = empty
+                            for v2 in vision:
+                                mat_regarde_invite_copie[v2[0]][v2[1]] -= 1
 
 
             if self.mat_regard[coord[0]][coord[1]] == 0: 
