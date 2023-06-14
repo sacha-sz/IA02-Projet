@@ -775,7 +775,7 @@ class Agent_Hitman:
                 if self.mat_connue[i][j] == stg:
                     return i, j
                 
-    def cost_path(self, path : List[Tuple[int, int]]):
+    def cost_path(self, path : List[Tuple[int, int]], direction_hitman : str=None) -> int:
 
         """
 
@@ -784,13 +784,14 @@ class Agent_Hitman:
             - Le cout lorsqu'on est vu en train de mettre le costume
             - Le cout lorsqu'on passe devant un garde sans costume
             - Le cout lorsqu'on tue la cible sans costume et qu'on est vu
-            - TODO : Incorporer la possibilité de tuer un garde ou un civil.
+            
 
         """
         cost = 0
         has_suit = False 
         suit_on = False
         print("path : ", path)
+        direction = direction_hitman
         
         mat_regard_copie = copy.deepcopy(self.mat_regard)
         mat_regarde_invite_copie = copy.deepcopy(self.mat_regard_invite)
