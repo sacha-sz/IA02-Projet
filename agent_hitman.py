@@ -791,6 +791,7 @@ class Agent_Hitman:
         has_suit = False 
         suit_on = False
         print("path : ", path)
+        
         mat_regard_copie = copy.deepcopy(self.mat_regard)
         mat_regarde_invite_copie = copy.deepcopy(self.mat_regard_invite)
         mat_connue_copie = copy.deepcopy(self.mat_connue)

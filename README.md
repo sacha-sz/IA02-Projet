@@ -85,7 +85,7 @@ EFFECT: Orientation(sud) )
 * Action(tourner_antihoraire, 
 PRECOND: Orientation(actuelle) = sud, 
 
-EFFECT: Orientation(est) )
+EFFECT: Orientation(est))
 
 * Action(tourner_antihoraire, 
 
