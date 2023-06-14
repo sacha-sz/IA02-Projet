@@ -49,6 +49,20 @@ def convert(var) -> HC:
         raise ValueError("Valeur inconnue : " + str(var))
 
 
+def case_devant_nous(x: int, y: int, orientation: HC) -> Tuple[int, int]:
+    if orientation == HC.E:
+        return x, y + 1
+
+    elif orientation == HC.W:
+        return x, y - 1
+
+    elif orientation == HC.N:
+        return x - 1, y
+
+    elif orientation == HC.S:
+        return x + 1, y
+
+
 class Agent_Hitman:
     def __init__(self):
         self.unknown = "?"
@@ -182,8 +196,6 @@ class Agent_Hitman:
             else:
                 print("Ce n'est pas un invite qui est en (" + str(ligne) + ", " + str(colonne) + ")")
 
-        
-
     def verif_vision_invite(self):
         for i in range(len(self.mat_regard_invite)):
             for j in range(len(self.mat_regard_invite)):
@@ -262,14 +274,8 @@ class Agent_Hitman:
             for pos in self.generate_neighboors(self.translate_ligne(self._x), self._y):
                 if self.mat_connue[pos[0]][pos[1]] == self.unknown:
                     unknown_pos.append((pos[0], pos[1]))
-                elif self.mat_connue[pos[0]][pos[1]] == GardeEst or \
-                        self.mat_connue[pos[0]][pos[1]] == GardeOuest or \
-                        self.mat_connue[pos[0]][pos[1]] == GardeNord or \
-                        self.mat_connue[pos[0]][pos[1]] == GardeSud or \
-                        self.mat_connue[pos[0]][pos[1]] == InviteEst or \
-                        self.mat_connue[pos[0]][pos[1]] == InviteOuest or \
-                        self.mat_connue[pos[0]][pos[1]] == InviteNord or \
-                        self.mat_connue[pos[0]][pos[1]] == InviteSud:
+                elif self.mat_connue[pos[0]][pos[1]] in [GardeEst, GardeOuest, GardeNord, GardeSud,
+                                                         InviteEst, InviteOuest, InviteNord, InviteSud]:
                     nb_ouie -= 1
             self.gophersat.ajout_clauses_entendre(unknown_pos, nb_ouie)
         else:
@@ -428,9 +434,9 @@ class Agent_Hitman:
                                 vision_bloque = True
 
                             if vision_bloque:
-                                #Sur la case de la target on ne reduit pas le cout car on peut la tuer
-                                #Et si on est vu sur cette case en train de tuer on prend une pénalité.
-                                if self.mat_connue[i + v][j] == Target: 
+                                # Sur la case de la target on ne reduit pas le cout car on peut la tuer
+                                # Et si on est vu sur cette case en train de tuer on prend une pénalité.
+                                if self.mat_connue[i + v][j] == Target:
                                     continue
                                 self.mat_regard[i + v][j] = max(0, self.mat_regard[i + v][j] - 5)
                                 if self.sat:
@@ -470,8 +476,6 @@ class Agent_Hitman:
                                 self.mat_regard[i][j - v] = max(0, self.mat_regard[i][j - v] - 5)
                                 if self.sat:
                                     self.sat_regard[i][j - v] = max(0, self.sat_regard[i][j - v] - 1)
-
-                
 
     def incomplete_mat(self) -> bool:
         """
@@ -611,7 +615,7 @@ class Agent_Hitman:
         pos_x = self.translate_ligne(self._x)
         pos_possible = []
 
-        # On se tourne en sens horaire jusqu'à ce qu'on trouve une case empty
+        # On se tourne en sens horaire jusqu'à ce qu’on trouve une case empty
         while len(pos_possible) == 0:
             self.turn()
             for delta in deltas:
@@ -675,7 +679,7 @@ class Agent_Hitman:
 
     def best_turn(self, x: int, y: int) -> None:
         """
-        On s'oriente vers la case (x, y) en tournant dans le sens le plus court.
+        On s’oriente vers la case (x, y) en tournant dans le sens le plus court.
         """
 
         current_orientation = self.info_actuelle["orientation"]
@@ -701,7 +705,7 @@ class Agent_Hitman:
             while self.coords_case_devant_nous() != (x, y):
                 self.turn(False)
 
-    def phase_1(self, SAT: bool = False) -> None:
+    def phase_1(self, sat: bool = False) -> None:
         """
         On fait un tour de jeu du hitman.
         """
@@ -710,7 +714,7 @@ class Agent_Hitman:
         print("--------------------")
         print(self)
 
-        self.sat = SAT
+        self.sat = sat
 
         self.first_move()
 
@@ -728,7 +732,7 @@ class Agent_Hitman:
                 for nu in nearest_unknown:
                     pos_nu.append((nu[0], nu[1]))
                 actual_target = pos_nu[0]
-                #print("actual target : ", actual_target)
+                # print("actual target : ", actual_target)
 
                 a_star_path = self.a_star((self.translate_ligne(self._x), self._y), (pos_nu[0]))
 
@@ -759,34 +763,20 @@ class Agent_Hitman:
             if not self.incomplete_mat():
                 break
 
-        #print("penalites : ", self.info_actuelle["penalties"])
+        # print("penalites : ", self.info_actuelle["penalties"])
 
         self.oracle.send_content(self.conversion_mat_connue())
         _, score, history, true_map = self.oracle.end_phase1()
         print(score)
         self.phase1 = False
-        
 
     def find_stg(self, stg: str) -> Tuple[int, int]:
         for i in range(len(self.mat_connue)):
             for j in range(len(self.mat_connue[i])):
                 if self.mat_connue[i][j] == stg:
                     return i, j
-    def case_devant_nous(self, x: int, y: int, orientation : HC) -> bool:
-        if orientation == HC.E:
-            return x, y+1
-        
-        elif orientation == HC.W:
-            return x, y-1
-        
-        elif orientation == HC.N:
-            return x-1, y
-        
-        elif orientation == HC.S:
-            return x+1, y
-        
 
-    def cost_path(self, path : List[Tuple[int, int]], x : int, y : int, direction_hitman : HC) -> int:
+    def cost_path(self, path: List[Tuple[int, int]], x: int, y: int, direction_hitman: HC) -> int:
 
         """
 
@@ -799,26 +789,23 @@ class Agent_Hitman:
             
         """
         cost = 0
-        has_suit = False 
+        has_suit = False
         suit_on = False
-        #print("path : ", path)
+        # print("path : ", path)
         if direction_hitman:
             direction = direction_hitman
 
         x_simu = x
         y_simu = y
 
-        
-        
         mat_regard_copie = copy.deepcopy(self.mat_regard)
         mat_regarde_invite_copie = copy.deepcopy(self.mat_regard_invite)
         mat_connue_copie = copy.deepcopy(self.mat_connue)
-        
+
         for id, coord in enumerate(path):
-            #print("coord : ", coord)
-            if self.case_devant_nous(x_simu, y_simu, direction) != coord:
-                #print("case devant nous : ", self.case_devant_nous(x_simu, y_simu, direction))
-                get_orientation_target = None
+            # print("coord : ", coord)
+            if case_devant_nous(x_simu, y_simu, direction) != coord:
+                # print("case devant nous : ", self.case_devant_nous(x_simu, y_simu, direction))
                 clockwise_orientation = [HC.N, HC.E, HC.S, HC.W]
                 anti_clockwise_orientation = [HC.N, HC.W, HC.S, HC.E]
                 if coord[0] == x_simu:
@@ -831,8 +818,10 @@ class Agent_Hitman:
                         get_orientation_target = HC.S
                     else:
                         get_orientation_target = HC.N
-                clockwise_distance = clockwise_orientation.index(get_orientation_target) - clockwise_orientation.index(direction)
-                anti_clockwise_distance = anti_clockwise_orientation.index(get_orientation_target) - anti_clockwise_orientation.index(direction)
+                clockwise_distance = clockwise_orientation.index(get_orientation_target) - clockwise_orientation.index(
+                    direction)
+                anti_clockwise_distance = anti_clockwise_orientation.index(
+                    get_orientation_target) - anti_clockwise_orientation.index(direction)
 
                 if clockwise_distance < 0:
                     clockwise_distance += 4
@@ -840,7 +829,7 @@ class Agent_Hitman:
                     anti_clockwise_distance += 4
 
                 if clockwise_distance <= anti_clockwise_distance:
-                    while self.case_devant_nous(x_simu, y_simu, direction) != (coord[0], coord[1]):
+                    while case_devant_nous(x_simu, y_simu, direction) != (coord[0], coord[1]):
                         if direction == HC.N:
                             direction = HC.E
                         elif direction == HC.E:
@@ -851,79 +840,81 @@ class Agent_Hitman:
                             direction = HC.N
 
                         cost += 1
-                        
+
                 else:
-                    while self.case_devant_nous(x_simu, y_simu, direction) != (coord[0], coord[1]):
+                    while case_devant_nous(x_simu, y_simu, direction) != (coord[0], coord[1]):
                         if direction == HC.N:
                             direction = HC.W
                         elif direction == HC.W:
                             direction = HC.S
-                        
+
                         elif direction == HC.S:
                             direction = HC.E
-                        
+
                         elif direction == HC.E:
                             direction = HC.N
 
                         cost += 1
 
-
-            cost += 1 #Coût pour se déplacer
+            cost += 1  # Coût pour se déplacer
             if not suit_on:
-                cost += mat_regard_copie[coord[0]][coord[1]] #Cout des regards des gardes
-                
+                cost += mat_regard_copie[coord[0]][coord[1]]  # Cout des regards des gardes
+
             if mat_connue_copie[coord[0]][coord[1]] == Corde:
                 cost += 1
                 mat_connue_copie[coord[0]][coord[1]] = empty
 
             if mat_connue_copie[coord[0]][coord[1]] == Costume:
-                    has_suit = True
-                    cost += 1
-                    mat_connue_copie[coord[0]][coord[1]] = empty
+                has_suit = True
+                cost += 1
+                mat_connue_copie[coord[0]][coord[1]] = empty
 
-            #On passe à côté d'un garde ou civil. S'il regarde la cible, on le tue.
-            #Générer les voisins et ensuite regarder si un des voisins est un garde et si ce garde regarde la cible.
-            neighbours = [(coord[0]+1, coord[1]), (coord[0]-1, coord[1]), (coord[0], coord[1]+1), (coord[0], coord[1]-1)]
+            # On passe à côté d'un garde ou civil. S'il regarde la cible, on le tue.
+            # Générer les voisins et ensuite regarder si un des voisins est un garde et si ce garde regarde la cible.
+            neighbours = [(coord[0] + 1, coord[1]), (coord[0] - 1, coord[1]), (coord[0], coord[1] + 1),
+                          (coord[0], coord[1] - 1)]
             for neighbour in neighbours:
-                if self.check_coord(neighbour[0], neighbour[1]) and mat_connue_copie[neighbour[0]][neighbour[1]].startswith("G"):
+                if self.check_coord(neighbour[0], neighbour[1]) and mat_connue_copie[neighbour[0]][
+                        neighbour[1]].startswith("G"):
                     vision = self.get_vision_guard(neighbour, mat_connue_copie)
                     target_pos = self.find_stg(Target)
                     for v in vision:
                         if v == target_pos:
                             cost += 20
-                            cost += 100*((mat_regard_copie[coord[0]][coord[1]]//5) + mat_regarde_invite_copie[coord[0]][coord[1]])
-                            cost += 1 #On Tue donc un cout en plus
+                            cost += 100 * ((mat_regard_copie[coord[0]][coord[1]] // 5) +
+                                           mat_regarde_invite_copie[coord[0]][coord[1]])
+                            cost += 1  # On Tue donc un cout en plus
                             mat_connue_copie[neighbour[0]][neighbour[1]] = empty
                             for v2 in vision:
                                 mat_regard_copie[v2[0]][v2[1]] -= 5
-                if self.check_coord(neighbour[0], neighbour[1]) and mat_connue_copie[neighbour[0]][neighbour[1]].startswith("I"):
+                if self.check_coord(neighbour[0], neighbour[1]) and mat_connue_copie[neighbour[0]][
+                        neighbour[1]].startswith("I"):
                     vision = self.get_vision_invite(neighbour, mat_connue_copie)
                     target_pos = self.find_stg(Target)
                     for v in vision:
                         if v == target_pos:
                             cost += 20
-                            cost += 100*((mat_regard_copie[coord[0]][coord[1]]//5) + mat_regarde_invite_copie[coord[0]][coord[1]])
+                            cost += 100 * ((mat_regard_copie[coord[0]][coord[1]] // 5) +
+                                           mat_regarde_invite_copie[coord[0]][coord[1]])
                             cost += 1
                             mat_connue_copie[neighbour[0]][neighbour[1]] = empty
                             for v2 in vision:
                                 mat_regarde_invite_copie[v2[0]][v2[1]] -= 1
 
-
-            if self.mat_regard[coord[0]][coord[1]] == 0: 
-                #On met uniquement si on n'est pas vu.
+            if self.mat_regard[coord[0]][coord[1]] == 0:
+                # On met uniquement si on n'est pas vu.
                 if has_suit:
                     suit_on = True
                     cost += 1
 
             if self.mat_connue[coord[0]][coord[1]] == Target:
-                
-                cost += (self.mat_regard[coord[0]][coord[1]]//5) * 100
-                cost += 1 #On Tue donc un cout en plus
+                cost += (self.mat_regard[coord[0]][coord[1]] // 5) * 100
+                cost += 1  # On Tue donc un cout en plus
                 mat_connue_copie[coord[0]][coord[1]] = empty
 
             x_simu = coord[0]
             y_simu = coord[1]
-            #print("cost : ", cost)
+            # print("cost : ", cost)
 
         return cost
 
@@ -942,19 +933,19 @@ class Agent_Hitman:
         # - 3 : init -> corde -> cible -> costume -> init
         # - 4 : init -> corde -> cible -> init
 
-        #A prendre en compte :
+        # A prendre en compte :
         # - Si on nous voit passer le costume on prend cher
         # - Si on nous prend en train de tuer la cible sans costume on prend cher.
 
         # ---------------------------- 1 ----------------------------
-        
-        path_init_costume = self.a_star((x_init, y_init), (costume_pos[0], costume_pos[1])) 
-        
+
+        path_init_costume = self.a_star((x_init, y_init), (costume_pos[0], costume_pos[1]))
+
         path_cos_to_cord = self.a_star((costume_pos[0], costume_pos[1]), (corde_pos[0], corde_pos[1]))
         path_cord_to_cib = self.a_star((corde_pos[0], corde_pos[1]), (target_pos[0], target_pos[1]))
         path_cib_to_init = self.a_star((target_pos[0], target_pos[1]), (x_init, y_init))
         chemin_1 = path_init_costume + path_cos_to_cord + path_cord_to_cib + path_cib_to_init
-        #couts_chemins[1] = len(chemin_1)
+        # couts_chemins[1] = len(chemin_1)
         couts_chemins[1] = self.cost_path(chemin_1, x_init, y_init, self.info_actuelle["orientation"])
 
         # ---------------------------- 2 ----------------------------
@@ -962,7 +953,7 @@ class Agent_Hitman:
         path_corde_cos = self.a_star((corde_pos[0], corde_pos[1]), (costume_pos[0], costume_pos[1]))
         path_cos_cib = self.a_star((costume_pos[0], costume_pos[1]), (target_pos[0], target_pos[1]))
         chemin_2 = path_init_corde + path_corde_cos + path_cos_cib + path_cib_to_init
-        #couts_chemins[2] = len(chemin_2)
+        # couts_chemins[2] = len(chemin_2)
         couts_chemins[2] = self.cost_path(chemin_2, x_init, y_init, self.info_actuelle["orientation"])
 
         # ---------------------------- 3 ----------------------------
@@ -970,22 +961,21 @@ class Agent_Hitman:
         path_cib_cos = self.a_star((target_pos[0], target_pos[1]), (costume_pos[0], costume_pos[1]))
         path_cos_init = self.a_star((costume_pos[0], costume_pos[1]), (x_init, y_init))
         chemin_3 = path_init_corde + path_cord_cib + path_cib_cos + path_cos_init
-        #couts_chemins[3] = len(chemin_3)
+        # couts_chemins[3] = len(chemin_3)
         couts_chemins[3] = self.cost_path(chemin_3, x_init, y_init, self.info_actuelle["orientation"])
 
         # ---------------------------- 4 ----------------------------
         path_cord_cib = self.a_star((corde_pos[0], corde_pos[1]), (target_pos[0], target_pos[1]))
         path_cib_to_init = self.a_star((target_pos[0], target_pos[1]), (x_init, y_init))
         chemin_4 = path_init_corde + path_cord_cib + path_cib_to_init
-        #couts_chemins[4] = len(chemin_4)
+        # couts_chemins[4] = len(chemin_4)
         couts_chemins[4] = self.cost_path(chemin_4, x_init, y_init, self.info_actuelle["orientation"])
 
         # ---------------------------- INFO ----------------------------
-        
 
         # On prend le chemin le plus court
         chemin = min(couts_chemins, key=couts_chemins.get)
-        #print("Shortest path : ", chemin)
+        # print("Shortest path : ", chemin)
 
         if chemin == 1:
             return chemin_1
@@ -1043,8 +1033,8 @@ class Agent_Hitman:
                         return True
 
         return False
-    
-    def get_vision_invite(self, invite : Tuple[int, int], mat : List[List] = None) -> List[Tuple[int, int]]:
+
+    def get_vision_invite(self, invite: Tuple[int, int], mat: List[List] = None) -> List[Tuple[int, int]]:
         """
         Renvoie la liste des cases que l'invite voit.
         """
@@ -1066,7 +1056,6 @@ class Agent_Hitman:
 
                     return vision
 
-        
             if self.mat_connue[i][j] == InviteNord and i - v >= 0:
                 if mat_connue[i - v][j] == empty or mat_connue[i - v][j] == Target:
 
@@ -1075,8 +1064,6 @@ class Agent_Hitman:
                 else:
 
                     return vision
-
-            
 
             if mat_connue[i][j] == InviteEst and j + v < self.max_C:
                 if mat_connue[i][j + v] == empty or mat_connue[i][j + v] == Target:
@@ -1093,8 +1080,8 @@ class Agent_Hitman:
                     return vision
 
         return vision
-    
-    def get_vision_guard(self, guard : Tuple[int, int], mat : List[List] = None) -> List[Tuple[int, int]]:
+
+    def get_vision_guard(self, guard: Tuple[int, int], mat: List[List] = None) -> List[Tuple[int, int]]:
         """
         Renvoie la liste des cases que le garde voit.
         """
@@ -1115,15 +1102,11 @@ class Agent_Hitman:
 
                 return vision
 
-        
             if self.mat_connue[i][j] == GardeNord and i - v >= 0:
                 if mat_connue[i - v][j] == empty or mat_connue[i - v][j] == Target:
-
                     vision.append((i - v, j))
 
                 return vision
-
-            
 
             if mat_connue[i][j] == GardeEst and j + v < self.max_C:
                 if mat_connue[i][j + v] == empty or mat_connue[i][j + v] == Target:
@@ -1140,23 +1123,22 @@ class Agent_Hitman:
                     return vision
 
         return vision
-    
 
     def phase_2(self):
         print("--------------------")
         print("\tPhase 2")
         print("--------------------")
-        #Correction temporaire
-        self.sat = False #Si le sat est à True les trajets de a_start son modifiés.
+        # Correction temporaire
+        self.sat = False  # Si le sat est à True les trajets d'a_start sont modifiés.
 
         self.info_actuelle = self.oracle.start_phase2()
-        #print("direction : ", self.info_actuelle["orientation"])
-        #print("penalites : ", self.info_actuelle["penalties"])
+        # print("direction : ", self.info_actuelle["orientation"])
+        # print("penalites : ", self.info_actuelle["penalties"])
         self._x = self.info_actuelle["position"][1]
         self._y = self.info_actuelle["position"][0]
         print(self)
 
-        #print("penalites : ", self.info_actuelle["penalties"])
+        # print("penalites : ", self.info_actuelle["penalties"])
 
         chemin = self.get_shortest_path_phase2()
         print("chemin : ", chemin)
@@ -1170,89 +1152,85 @@ class Agent_Hitman:
             queue_action.append(coord)
 
         while len(queue_action) != 0:
-            #print("penalites : ", self.info_actuelle["penalties"])
+            # print("penalites : ", self.info_actuelle["penalties"])
             next_action = queue_action.popleft()
             self.best_turn(next_action[0], next_action[1])
             self.info_actuelle = self.oracle.move()
-            #print("penalites : ", self.info_actuelle["penalties"])
+            # print("penalites : ", self.info_actuelle["penalties"])
             self._x = self.info_actuelle["position"][1]
             self._y = self.info_actuelle["position"][0]
 
             if self.mat_connue[self.translate_ligne(self._x)][self._y] == Corde:
                 self.info_actuelle = self.oracle.take_weapon()
-                #print("penalites : ", self.info_actuelle["penalties"])
+                # print("penalites : ", self.info_actuelle["penalties"])
                 self.mat_connue[self.translate_ligne(self._x)][self._y] = empty
 
             elif self.mat_connue[self.translate_ligne(self._x)][self._y] == Costume:
                 self.info_actuelle = self.oracle.take_suit()
-                #print("penalites : ", self.info_actuelle["penalties"])
+                # print("penalites : ", self.info_actuelle["penalties"])
                 possede_costume = True
                 self.mat_connue[self.translate_ligne(self._x)][self._y] = empty
 
             elif self.mat_connue[self.translate_ligne(self._x)][self._y] == Target:
                 self.info_actuelle = self.oracle.kill_target()
-                #print("penalites : ", self.info_actuelle["penalties"])
+                # print("penalites : ", self.info_actuelle["penalties"])
                 self.mat_connue[self.translate_ligne(self._x)][self._y] = DEAD
 
             if possede_costume and not self.is_seen():
-               self.info_actuelle = self.oracle.put_on_suit()
+                self.info_actuelle = self.oracle.put_on_suit()
 
-            
-            neighbours = [(self.translate_ligne(self._x)+1, self._y), (self.translate_ligne(self._x)-1, self._y), (self.translate_ligne(self._x), self._y+1), (self.translate_ligne(self._x), self._y-1)]
-            
-            
+            neighbours = [(self.translate_ligne(self._x) + 1, self._y), (self.translate_ligne(self._x) - 1, self._y),
+                          (self.translate_ligne(self._x), self._y + 1), (self.translate_ligne(self._x), self._y - 1)]
+
             for ngb in neighbours:
-                #print("case ngb : ", self.mat_connue[ngb[0]][ngb[1]])
-              
+                # print("case ngb : ", self.mat_connue[ngb[0]][ngb[1]])
+
                 if not self.check_coord(ngb[0], ngb[1]):
                     continue
-                if self.mat_connue[ngb[0]][ngb[1]] == GardeEst or self.mat_connue[ngb[0]][ngb[1]] == GardeNord or self.mat_connue[ngb[0]][ngb[1]] == GardeOuest or self.mat_connue[ngb[0]][ngb[1]] == GardeSud:
+                if self.mat_connue[ngb[0]][ngb[1]] == GardeEst or self.mat_connue[ngb[0]][ngb[1]] == GardeNord or \
+                        self.mat_connue[ngb[0]][ngb[1]] == GardeOuest or self.mat_connue[ngb[0]][ngb[1]] == GardeSud:
                     # Regarder si ce garde regarde la cible : 
-                    # Si oui on le tue
+                    # Si oui, on le tue
                     # Sinon on passe devant lui
-                
-                    
+
                     regards_garde = self.get_vision_guard(ngb)
-                    
+
                     for rg in regards_garde:
                         target_pos = self.find_stg(Target)
                         if rg == target_pos:
 
                             self.best_turn(ngb[0], ngb[1])
-                            if self.mat_connue[ngb[0]][ngb[1]] == GardeEst or self.mat_connue[ngb[0]][ngb[1]] == GardeNord or self.mat_connue[ngb[0]][ngb[1]] == GardeOuest or self.mat_connue[ngb[0]][ngb[1]] == GardeSud:
-
+                            if self.mat_connue[ngb[0]][ngb[1]] == GardeEst or self.mat_connue[ngb[0]][
+                                ngb[1]] == GardeNord or self.mat_connue[ngb[0]][ngb[1]] == GardeOuest or \
+                                    self.mat_connue[ngb[0]][ngb[1]] == GardeSud:
                                 self.info_actuelle = self.oracle.neutralize_guard()
-                                #print("penalites : ", self.info_actuelle["penalties"])
+                                # print("penalites : ", self.info_actuelle["penalties"])
 
-                           
                             self.mat_connue[ngb[0]][ngb[1]] = empty
 
-                if self.mat_connue[ngb[0]][ngb[1]] == InviteEst or self.mat_connue[ngb[0]][ngb[1]] == InviteNord or self.mat_connue[ngb[0]][ngb[1]] == InviteOuest or self.mat_connue[ngb[0]][ngb[1]] == InviteSud:
-                    # Regarder si cet invite regarde la cible : 
-                    # Si oui on le tue
+                if self.mat_connue[ngb[0]][ngb[1]] == InviteEst or self.mat_connue[ngb[0]][ngb[1]] == InviteNord or \
+                        self.mat_connue[ngb[0]][ngb[1]] == InviteOuest or self.mat_connue[ngb[0]][ngb[1]] == InviteSud:
+                    # Regarder si cet invité regarde la cible :
+                    # Si oui, on le tue
                     # Sinon on passe devant lui
-                
-                    
+
                     regards_invite = self.get_vision_invite(ngb)
-                    
+
                     for rg in regards_invite:
                         target_pos = self.find_stg(Target)
                         if rg == target_pos:
 
                             self.best_turn(ngb[0], ngb[1])
-                            if self.mat_connue[ngb[0]][ngb[1]] == InviteEst or self.mat_connue[ngb[0]][ngb[1]] == InviteNord or self.mat_connue[ngb[0]][ngb[1]] == InviteOuest or self.mat_connue[ngb[0]][ngb[1]] == InviteSud:
-
+                            if self.mat_connue[ngb[0]][ngb[1]] == InviteEst or self.mat_connue[ngb[0]][
+                                ngb[1]] == InviteNord or self.mat_connue[ngb[0]][ngb[1]] == InviteOuest or \
+                                    self.mat_connue[ngb[0]][ngb[1]] == InviteSud:
                                 self.info_actuelle = self.oracle.neutralize_invite()
-                                #print("penalites : ", self.info_actuelle["penalties"])
+                                # print("penalites : ", self.info_actuelle["penalties"])
 
-                           
                             self.mat_connue[ngb[0]][ngb[1]] = empty
-
-
-
 
             print(self)
 
         _, score, history = self.oracle.end_phase2()
         print("score : ", score)
-        #print("history : ", history)
+        # print("history : ", history)

@@ -81,10 +81,9 @@ class Gophersat:
 
         elif nb_ouie == 0:
             for t in lp:
-                self.clauses.add((-self.dVar[(t[0], t[1], "P")]))
-                self.clauses.add((-self.dVar[(t[0], t[1], "G")]))
-                self.clauses.add((-self.dVar[(t[0], t[1], "I")]))
-                self.nClauses += 3
+                for elt in ELEMENTS_TUILE:
+                    self.clauses.add((-self.dVar[(t[0], t[1], elt)]))
+                    self.nClauses += 1
 
         elif nb_ouie < BROUHAHA:
             # Au moins et au plus nb_ouie personnages
@@ -103,7 +102,6 @@ class Gophersat:
             for clause in clauses_at_most:
                 self.clauses.add(clause)
             self.nClauses += len(clauses_at_most)
-
 
         self.write_file()
 
@@ -127,10 +125,9 @@ class Gophersat:
                 self.clauses.add((-self.dVar[(t[0], t[1], "G")]))
                 self.nClauses += 3
             else:
-                self.clauses.add((-self.dVar[(t[0], t[1], "P")]))
-                self.clauses.add((-self.dVar[(t[0], t[1], "G")]))
-                self.clauses.add((-self.dVar[(t[0], t[1], "I")]))
-                self.nClauses += 3
+                for elt in ELEMENTS_TUILE:
+                    self.clauses.add((-self.dVar[(t[0], t[1], elt)]))
+                    self.nClauses += 1
 
         self.write_file()
 
