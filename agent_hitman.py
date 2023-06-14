@@ -87,6 +87,7 @@ class Agent_Hitman:
         self.nb_invites = self.info_actuelle["civil_count"]
 
         self.mat_connue = [[self.unknown] * self.max_C for _ in range(self.max_L)]
+        self.mat_connue[self.translate_ligne(self._x)][self._y] = empty
 
         self.mat_regard = [[0] * self.max_C for _ in range(self.max_L)]
         self.mat_regard_invite = [[0] * self.max_C for _ in range(self.max_L)]
