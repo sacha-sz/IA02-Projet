@@ -182,9 +182,7 @@ class Agent_Hitman:
             else:
                 print("Ce n'est pas un invite qui est en (" + str(ligne) + ", " + str(colonne) + ")")
 
-        print("mat regarde appele dans vision invite")
-        for l in self.mat_regard:
-            print(l)
+        
 
     def verif_vision_invite(self):
         for i in range(len(self.mat_regard_invite)):
@@ -774,8 +772,21 @@ class Agent_Hitman:
             for j in range(len(self.mat_connue[i])):
                 if self.mat_connue[i][j] == stg:
                     return i, j
-                
-    def cost_path(self, path : List[Tuple[int, int]], direction_hitman : str=None) -> int:
+    def case_devant_nous(self, x: int, y: int, orientation : HC) -> bool:
+        if orientation == HC.E:
+            return x, y+1
+        
+        elif orientation == HC.W:
+            return x, y-1
+        
+        elif orientation == HC.N:
+            return x-1, y
+        
+        elif orientation == HC.S:
+            return x+1, y
+        
+
+    def cost_path(self, path : List[Tuple[int, int]], x : int, y : int, direction_hitman : HC) -> int:
 
         """
 
@@ -785,19 +796,78 @@ class Agent_Hitman:
             - Le cout lorsqu'on passe devant un garde sans costume
             - Le cout lorsqu'on tue la cible sans costume et qu'on est vu
             
-
         """
         cost = 0
         has_suit = False 
         suit_on = False
         print("path : ", path)
-        direction = direction_hitman
+        if direction_hitman:
+            direction = direction_hitman
+
+        x_simu = x
+        y_simu = y
+
+        
         
         mat_regard_copie = copy.deepcopy(self.mat_regard)
         mat_regarde_invite_copie = copy.deepcopy(self.mat_regard_invite)
         mat_connue_copie = copy.deepcopy(self.mat_connue)
         
-        for coord in path:
+        for id, coord in enumerate(path):
+            if self.case_devant_nous(x_simu, y_simu, direction) != coord:
+                get_orientation_target = None
+                clockwise_orientation = [HC.N, HC.E, HC.S, HC.W]
+                anti_clockwise_orientation = [HC.N, HC.W, HC.S, HC.E]
+                if coord[0] == x_simu:
+                    if coord[1] > y_simu:
+                        get_orientation_target = HC.E
+                    else:
+                        get_orientation_target = HC.W
+                else:
+                    if coord[0] > x_simu:
+                        get_orientation_target = HC.S
+                    else:
+                        get_orientation_target = HC.N
+                clockwise_distance = clockwise_orientation.index(get_orientation_target) - clockwise_orientation.index(direction)
+                anti_clockwise_distance = anti_clockwise_orientation.index(get_orientation_target) - anti_clockwise_orientation.index(direction)
+
+                if clockwise_distance < 0:
+                    clockwise_distance += 4
+                if anti_clockwise_distance < 0:
+                    anti_clockwise_distance += 4
+
+                if clockwise_distance <= anti_clockwise_distance:
+                    while self.case_devant_nous(x_simu, y_simu, direction) != (coord[0], coord[1]):
+                        if direction == HC.N:
+                            direction = HC.E
+                        elif direction == HC.E:
+                            direction = HC.S
+                        elif direction == HC.S:
+                            direction = HC.W
+                        elif direction == HC.W:
+                            direction = HC.N
+
+                        cost += 1
+                        
+                else:
+                    while self.case_devant_nous(x_simu, y_simu, direction) != (coord[0], coord[1]):
+                        if direction == HC.N:
+                            direction = HC.W
+                        elif direction == HC.W:
+                            direction = HC.S
+                        
+                        elif direction == HC.S:
+                            direction = HC.E
+                        
+                        elif direction == HC.E:
+                            direction = HC.N
+
+                        cost += 1
+
+                
+                
+            
+
             cost += 1
             if not suit_on:
                 cost += mat_regard_copie[coord[0]][coord[1]] #Cout des regards des gardes
@@ -843,6 +913,9 @@ class Agent_Hitman:
                 cost += (self.mat_regard[coord[0]][coord[1]]//5) * 100
                 cost += 1 #On Tue donc un cout en plus
 
+            x_simu = coord[0]
+            y_simu = coord[1]
+
         return cost
 
     def get_shortest_path_phase2(self):
@@ -873,7 +946,7 @@ class Agent_Hitman:
         path_cib_to_init = self.a_star((target_pos[0], target_pos[1]), (x_init, y_init))
         chemin_1 = path_init_costume + path_cos_to_cord + path_cord_to_cib + path_cib_to_init
         #couts_chemins[1] = len(chemin_1)
-        couts_chemins[1] = self.cost_path(chemin_1)
+        couts_chemins[1] = self.cost_path(chemin_1, x_init, y_init, self.info_actuelle["orientation"])
 
         # ---------------------------- 2 ----------------------------
         path_init_corde = self.a_star((x_init, y_init), (corde_pos[0], corde_pos[1]))
@@ -881,7 +954,7 @@ class Agent_Hitman:
         path_cos_cib = self.a_star((costume_pos[0], costume_pos[1]), (target_pos[0], target_pos[1]))
         chemin_2 = path_init_corde + path_corde_cos + path_cos_cib + path_cib_to_init
         #couts_chemins[2] = len(chemin_2)
-        couts_chemins[2] = self.cost_path(chemin_2)
+        couts_chemins[2] = self.cost_path(chemin_2, x_init, y_init, self.info_actuelle["orientation"])
 
         # ---------------------------- 3 ----------------------------
         path_cord_cib = self.a_star((corde_pos[0], corde_pos[1]), (target_pos[0], target_pos[1]))
@@ -889,14 +962,14 @@ class Agent_Hitman:
         path_cos_init = self.a_star((costume_pos[0], costume_pos[1]), (x_init, y_init))
         chemin_3 = path_init_corde + path_cord_cib + path_cib_cos + path_cos_init
         #couts_chemins[3] = len(chemin_3)
-        couts_chemins[3] = self.cost_path(chemin_3)
+        couts_chemins[3] = self.cost_path(chemin_3, x_init, y_init, self.info_actuelle["orientation"])
 
         # ---------------------------- 4 ----------------------------
         path_cord_cib = self.a_star((corde_pos[0], corde_pos[1]), (target_pos[0], target_pos[1]))
         path_cib_to_init = self.a_star((target_pos[0], target_pos[1]), (x_init, y_init))
         chemin_4 = path_init_corde + path_cord_cib + path_cib_to_init
         #couts_chemins[4] = len(chemin_4)
-        couts_chemins[4] = self.cost_path(chemin_4)
+        couts_chemins[4] = self.cost_path(chemin_4, x_init, y_init, self.info_actuelle["orientation"])
 
         # ---------------------------- INFO ----------------------------
         print("couts chemins : ")
