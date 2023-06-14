@@ -1,1 +1,1 @@
-print
+cost_pa

@@ -759,7 +759,7 @@ class Agent_Hitman:
             if not self.incomplete_mat():
                 break
 
-        print("penalites : ", self.info_actuelle["penalties"])
+        #print("penalites : ", self.info_actuelle["penalties"])
 
         self.oracle.send_content(self.conversion_mat_connue())
         _, score, history, true_map = self.oracle.end_phase1()
@@ -792,6 +792,7 @@ class Agent_Hitman:
 
             Methode pour calculer le cout d'un chemin. On prend en compte :
             - Le cout de chaque déplacement
+            - Le cout des rotations
             - Le cout lorsqu'on est vu en train de mettre le costume
             - Le cout lorsqu'on passe devant un garde sans costume
             - Le cout lorsqu'on tue la cible sans costume et qu'on est vu
@@ -800,7 +801,7 @@ class Agent_Hitman:
         cost = 0
         has_suit = False 
         suit_on = False
-        print("path : ", path)
+        #print("path : ", path)
         if direction_hitman:
             direction = direction_hitman
 
@@ -814,7 +815,9 @@ class Agent_Hitman:
         mat_connue_copie = copy.deepcopy(self.mat_connue)
         
         for id, coord in enumerate(path):
+            #print("coord : ", coord)
             if self.case_devant_nous(x_simu, y_simu, direction) != coord:
+                #print("case devant nous : ", self.case_devant_nous(x_simu, y_simu, direction))
                 get_orientation_target = None
                 clockwise_orientation = [HC.N, HC.E, HC.S, HC.W]
                 anti_clockwise_orientation = [HC.N, HC.W, HC.S, HC.E]
@@ -864,16 +867,19 @@ class Agent_Hitman:
 
                         cost += 1
 
-                
-                
-            
 
-            cost += 1
+            cost += 1 #Coût pour se déplacer
             if not suit_on:
                 cost += mat_regard_copie[coord[0]][coord[1]] #Cout des regards des gardes
+                
+            if mat_connue_copie[coord[0]][coord[1]] == Corde:
+                cost += 1
+                mat_connue_copie[coord[0]][coord[1]] = empty
 
             if mat_connue_copie[coord[0]][coord[1]] == Costume:
                     has_suit = True
+                    cost += 1
+                    mat_connue_copie[coord[0]][coord[1]] = empty
 
             #On passe à côté d'un garde ou civil. S'il regarde la cible, on le tue.
             #Générer les voisins et ensuite regarder si un des voisins est un garde et si ce garde regarde la cible.
@@ -907,14 +913,17 @@ class Agent_Hitman:
                 #On met uniquement si on n'est pas vu.
                 if has_suit:
                     suit_on = True
+                    cost += 1
 
             if self.mat_connue[coord[0]][coord[1]] == Target:
                 
                 cost += (self.mat_regard[coord[0]][coord[1]]//5) * 100
                 cost += 1 #On Tue donc un cout en plus
+                mat_connue_copie[coord[0]][coord[1]] = empty
 
             x_simu = coord[0]
             y_simu = coord[1]
+            #print("cost : ", cost)
 
         return cost
 
@@ -972,13 +981,11 @@ class Agent_Hitman:
         couts_chemins[4] = self.cost_path(chemin_4, x_init, y_init, self.info_actuelle["orientation"])
 
         # ---------------------------- INFO ----------------------------
-        print("couts chemins : ")
-        for k, v in couts_chemins.items():
-            print(k, v)
+        
 
         # On prend le chemin le plus court
         chemin = min(couts_chemins, key=couts_chemins.get)
-        print("Shortest path : ", chemin)
+        #print("Shortest path : ", chemin)
 
         if chemin == 1:
             return chemin_1
@@ -1143,9 +1150,13 @@ class Agent_Hitman:
         self.sat = False #Si le sat est à True les trajets de a_start son modifiés.
 
         self.info_actuelle = self.oracle.start_phase2()
+        #print("direction : ", self.info_actuelle["orientation"])
+        #print("penalites : ", self.info_actuelle["penalties"])
         self._x = self.info_actuelle["position"][1]
         self._y = self.info_actuelle["position"][0]
         print(self)
+
+        #print("penalites : ", self.info_actuelle["penalties"])
 
         chemin = self.get_shortest_path_phase2()
         print("chemin : ", chemin)
@@ -1159,27 +1170,32 @@ class Agent_Hitman:
             queue_action.append(coord)
 
         while len(queue_action) != 0:
+            #print("penalites : ", self.info_actuelle["penalties"])
             next_action = queue_action.popleft()
             self.best_turn(next_action[0], next_action[1])
             self.info_actuelle = self.oracle.move()
+            #print("penalites : ", self.info_actuelle["penalties"])
             self._x = self.info_actuelle["position"][1]
             self._y = self.info_actuelle["position"][0]
 
             if self.mat_connue[self.translate_ligne(self._x)][self._y] == Corde:
-                self.oracle.take_weapon()
+                self.info_actuelle = self.oracle.take_weapon()
+                #print("penalites : ", self.info_actuelle["penalties"])
                 self.mat_connue[self.translate_ligne(self._x)][self._y] = empty
 
             elif self.mat_connue[self.translate_ligne(self._x)][self._y] == Costume:
-                self.oracle.take_suit()
+                self.info_actuelle = self.oracle.take_suit()
+                #print("penalites : ", self.info_actuelle["penalties"])
                 possede_costume = True
                 self.mat_connue[self.translate_ligne(self._x)][self._y] = empty
 
             elif self.mat_connue[self.translate_ligne(self._x)][self._y] == Target:
-                self.oracle.kill_target()
+                self.info_actuelle = self.oracle.kill_target()
+                #print("penalites : ", self.info_actuelle["penalties"])
                 self.mat_connue[self.translate_ligne(self._x)][self._y] = DEAD
 
             if possede_costume and not self.is_seen():
-                self.oracle.put_on_suit()
+               self.info_actuelle = self.oracle.put_on_suit()
 
             
             neighbours = [(self.translate_ligne(self._x)+1, self._y), (self.translate_ligne(self._x)-1, self._y), (self.translate_ligne(self._x), self._y+1), (self.translate_ligne(self._x), self._y-1)]
@@ -1205,7 +1221,8 @@ class Agent_Hitman:
                             self.best_turn(ngb[0], ngb[1])
                             if self.mat_connue[ngb[0]][ngb[1]] == GardeEst or self.mat_connue[ngb[0]][ngb[1]] == GardeNord or self.mat_connue[ngb[0]][ngb[1]] == GardeOuest or self.mat_connue[ngb[0]][ngb[1]] == GardeSud:
 
-                                self.oracle.neutralize_guard()
+                                self.info_actuelle = self.oracle.neutralize_guard()
+                                #print("penalites : ", self.info_actuelle["penalties"])
 
                            
                             self.mat_connue[ngb[0]][ngb[1]] = empty
@@ -1225,7 +1242,8 @@ class Agent_Hitman:
                             self.best_turn(ngb[0], ngb[1])
                             if self.mat_connue[ngb[0]][ngb[1]] == InviteEst or self.mat_connue[ngb[0]][ngb[1]] == InviteNord or self.mat_connue[ngb[0]][ngb[1]] == InviteOuest or self.mat_connue[ngb[0]][ngb[1]] == InviteSud:
 
-                                self.oracle.neutralize_invite()
+                                self.info_actuelle = self.oracle.neutralize_invite()
+                                #print("penalites : ", self.info_actuelle["penalties"])
 
                            
                             self.mat_connue[ngb[0]][ngb[1]] = empty
