@@ -1047,12 +1047,11 @@ class Agent_Hitman:
               
                 if not self.check_coord(ngb[0], ngb[1]):
                     continue
-                if self.mat_connue[ngb[0]][ngb[1]] == GardeEst or self.mat_connue[ngb[0]][ngb[1]] == GardeNord or self.mat_connue[ngb[0]][ngb[1]] == GardeOuest or self.mat_connue[ngb[0]][ngb[1]] == GardeSud or self.mat_connue[ngb[0]][ngb[1]] == InviteNord or self.mat_connue[ngb[0]][ngb[1]] == InviteSud or self.mat_connue[ngb[0]][ngb[1]] == InviteEst or self.mat_connue[ngb[0]][ngb[1]] == InviteOuest:
+                if self.mat_connue[ngb[0]][ngb[1]] == GardeEst or self.mat_connue[ngb[0]][ngb[1]] == GardeNord or self.mat_connue[ngb[0]][ngb[1]] == GardeOuest or self.mat_connue[ngb[0]][ngb[1]] == GardeSud:
                     # Regarder si ce garde regarde la cible : 
                     # Si oui on le tue
                     # Sinon on passe devant lui
-                    
-                    
+                
                     
                     regards_garde = self.get_vision_guard(ngb)
                     
@@ -1065,9 +1064,30 @@ class Agent_Hitman:
 
                                 self.oracle.neutralize_guard()
 
-                            else: 
-                                self.oracle.neutralize_civil()
+                           
                             self.mat_connue[ngb[0]][ngb[1]] = empty
+
+                if self.mat_connue[ngb[0]][ngb[1]] == InviteEst or self.mat_connue[ngb[0]][ngb[1]] == InviteNord or self.mat_connue[ngb[0]][ngb[1]] == InviteOuest or self.mat_connue[ngb[0]][ngb[1]] == InviteSud:
+                    # Regarder si cet invite regarde la cible : 
+                    # Si oui on le tue
+                    # Sinon on passe devant lui
+                
+                    
+                    regards_invite = self.get_vision_invite(ngb)
+                    
+                    for rg in regards_invite:
+                        target_pos = self.find_stg(Target)
+                        if rg == target_pos:
+
+                            self.best_turn(ngb[0], ngb[1])
+                            if self.mat_connue[ngb[0]][ngb[1]] == InviteEst or self.mat_connue[ngb[0]][ngb[1]] == InviteNord or self.mat_connue[ngb[0]][ngb[1]] == InviteOuest or self.mat_connue[ngb[0]][ngb[1]] == InviteSud:
+
+                                self.oracle.neutralize_invite()
+
+                           
+                            self.mat_connue[ngb[0]][ngb[1]] = empty
+
+
 
 
             print(self)
