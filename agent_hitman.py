@@ -730,7 +730,7 @@ class Agent_Hitman:
                 for nu in nearest_unknown:
                     pos_nu.append((nu[0], nu[1]))
                 actual_target = pos_nu[0]
-                print("actual target : ", actual_target)
+                #print("actual target : ", actual_target)
 
                 a_star_path = self.a_star((self.translate_ligne(self._x), self._y), (pos_nu[0]))
 
@@ -767,13 +767,7 @@ class Agent_Hitman:
         _, score, history, true_map = self.oracle.end_phase1()
         print(score)
         self.phase1 = False
-        print("matrice regard : ")
-        for l in self.mat_regard:
-            print(l)
-
-        print("matrice connue : ")
-        for l in self.mat_connue:
-            print(l)
+        
 
     def find_stg(self, stg: str) -> Tuple[int, int]:
         for i in range(len(self.mat_connue)):
@@ -1168,4 +1162,4 @@ class Agent_Hitman:
 
         _, score, history = self.oracle.end_phase2()
         print("score : ", score)
-        print("history : ", history)
+        #print("history : ", history)
