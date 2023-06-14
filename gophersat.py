@@ -99,6 +99,12 @@ class Gophersat:
                 self.clauses.add(clause)
             self.nClauses += len(clauses_at_least)
 
+            clauses_at_most = at_most_n(len(lp), [self.dVar[(t[0], t[1], "P")] for t in lp])
+            for clause in clauses_at_most:
+                self.clauses.add(clause)
+            self.nClauses += len(clauses_at_most)
+
+
         self.write_file()
 
     def ajout_clauses_voir(self, res_liste: List[Tuple[int, int, str]]) -> None:
