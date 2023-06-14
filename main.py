@@ -18,7 +18,7 @@ def main():
         hitman.phase_1()
     end = time.time()
     print("Durée de la phase 1 : " + str(end - start) + " secondes")
-    #hitman.phase_2()
+    hitman.phase_2()
 
 
 

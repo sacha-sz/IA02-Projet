@@ -20,6 +20,7 @@ BROUHAHA = 5
 MAX_VOISINS = 25
 MAX_OUIE = 2
 MAX_VISION_GARDE = 2
+MAX_VISION_INVITE = 1
 
 # Variables pour les matrices
 empty = " " # "E"

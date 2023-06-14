@@ -1,6 +1,7 @@
 from hitman import *
 from gophersat import *
 from collections import deque
+import copy
 import heapq
 
 
@@ -720,29 +721,56 @@ class Agent_Hitman:
             - Le cout lorsqu'on est vu en train de mettre le costume
             - Le cout lorsqu'on passe devant un garde sans costume
             - Le cout lorsqu'on tue la cible sans costume et qu'on est vu
+            - TODO : Incorporer la possibilité de tuer un garde ou un civil.
 
         """
         cost = 0
         has_suit = False 
         suit_on = False
         print("path : ", path)
+        mat_regard_copie = copy.deepcopy(self.mat_regard)
+        mat_connue_copie = copy.deepcopy(self.mat_connue)
+        
         for coord in path:
             cost += 1
             if not suit_on:
-                cost += self.mat_regard[coord[0]][coord[1]] #Cout des regards des gardes
+                cost += mat_regard_copie[coord[0]][coord[1]] #Cout des regards des gardes
 
-            if self.mat_connue[coord[0]][coord[1]] == Costume:
+            if mat_connue_copie[coord[0]][coord[1]] == Costume:
                     has_suit = True
 
+            #On passe à côté d'un garde ou civil. S'il regarde la cible, on le tue.
+            #Générer les voisins et ensuite regarder si un des voisins est un garde et si ce garde regarde la cible.
+            neighbours = [(coord[0]+1, coord[1]), (coord[0]-1, coord[1]), (coord[0], coord[1]+1), (coord[0], coord[1]-1)]
+            for neighbour in neighbours:
+                if self.check_coord(neighbour[0], neighbour[1]) and mat_connue_copie[neighbour[0]][neighbour[1]].startswith("G"):
+                    vision = self.get_vision_guard(neighbour, mat_connue_copie)
+                    target_pos = self.find_stg(Target)
+                    for v in vision:
+                        if v == target_pos:
+                            cost += 20*(mat_regard_copie[neighbour[0]][neighbour[1]]//5)
+                            cost += 1 #On Tue donc un cout en plus
+                            mat_connue_copie[neighbour[0]][neighbour[1]] = empty
+                            for v2 in vision:
+                                mat_regard_copie[v2[0]][v2[1]] -= 5
+                if self.check_coord(neighbour[0], neighbour[1]) and mat_connue_copie[neighbour[0]][neighbour[1]].startswith("I"):
+                    vision = self.get_vision_invite(neighbour, mat_connue_copie)
+                    target_pos = self.find_stg(Target)
+                    for v in vision:
+                        if v == target_pos:
+                            cost += 20*(mat_regard_copie[neighbour[0]][neighbour[1]]//5)
+                            cost += 1
+                            mat_connue_copie[neighbour[0]][neighbour[1]] = empty
+
+
             if self.mat_regard[coord[0]][coord[1]] == 0: 
-                #On met uniquement si on n'est pas vu. A modifier car 
-                #On risque de ne jamais mettre le costume dans certains cas s'il ne faut jamais être vu.
+                #On met uniquement si on n'est pas vu.
                 if has_suit:
                     suit_on = True
 
             if self.mat_connue[coord[0]][coord[1]] == Target:
-                if not suit_on:
-                    cost += (self.mat_regard[coord[0]][coord[1]]//5) * 100
+                
+                cost += (self.mat_regard[coord[0]][coord[1]]//5) * 100
                 cost += 1 #On Tue donc un cout en plus
 
         return cost
@@ -764,7 +792,7 @@ class Agent_Hitman:
 
         #A prendre en compte :
         # - Si on nous voit passer le costume on prend cher
-        # - Si on nous prendre tuer la cible sans costume on prend cher.
+        # - Si on nous prend en train de tuer la cible sans costume on prend cher.
 
         # ---------------------------- 1 ----------------------------
         
@@ -866,12 +894,103 @@ class Agent_Hitman:
 
         return False
     
-    def path_cost(self, path : List[Tuple[int, int]]) -> int:
-        cost = 0
-        for coord in path:
-            cost += 1
-            cost += self.mat_regard[coord[0]][coord[1]]
-        return cost
+    def get_vision_invite(self, invite : Tuple[int, int], mat : List[List] = None) -> List[Tuple[int, int]]:
+        """
+        Renvoie la liste des cases que l'invite voit.
+        """
+        vision = []
+        i = invite[0]
+        j = invite[1]
+
+        if mat:
+            mat_connue = mat
+
+        else:
+            mat_connue = self.mat_connue
+
+        for v in range(1, MAX_VISION_INVITE + 1):
+            if mat_connue[i][j] == InviteSud and i + v < self.max_L:
+                if self.mat_connue[i + v][j] == empty or mat_connue[i + v][j] == Target:
+                    vision.append((i + v, j))
+                else:
+
+                    return vision
+
+        
+            if self.mat_connue[i][j] == InviteNord and i - v >= 0:
+                if mat_connue[i - v][j] == empty or mat_connue[i - v][j] == Target:
+
+                    vision.append((i - v, j))
+
+                else:
+
+                    return vision
+
+            
+
+            if mat_connue[i][j] == InviteEst and j + v < self.max_C:
+                if mat_connue[i][j + v] == empty or mat_connue[i][j + v] == Target:
+                    vision.append((i, j + v))
+
+                else:
+                    return vision
+
+            if mat_connue[i][j] == InviteOuest and j - v >= 0:
+                if mat_connue[i][j - v] == empty or mat_connue[i][j - v] == Target:
+
+                    vision.append((i, j - v))
+                else:
+                    return vision
+
+        return vision
+    
+    def get_vision_guard(self, guard : Tuple[int, int], mat : List[List] = None) -> List[Tuple[int, int]]:
+        """
+        Renvoie la liste des cases que le garde voit.
+        """
+        vision = []
+        i = guard[0]
+        j = guard[1]
+
+        if mat:
+            mat_connue = mat
+
+        else:
+            mat_connue = self.mat_connue
+
+        for v in range(1, MAX_VISION_GARDE + 1):
+            if mat_connue[i][j] == GardeSud and i + v < self.max_L:
+                if self.mat_connue[i + v][j] == empty or mat_connue[i + v][j] == Target:
+                    vision.append((i + v, j))
+
+                return vision
+
+        
+            if self.mat_connue[i][j] == GardeNord and i - v >= 0:
+                if mat_connue[i - v][j] == empty or mat_connue[i - v][j] == Target:
+
+                    vision.append((i - v, j))
+
+                return vision
+
+            
+
+            if mat_connue[i][j] == GardeEst and j + v < self.max_C:
+                if mat_connue[i][j + v] == empty or mat_connue[i][j + v] == Target:
+                    vision.append((i, j + v))
+
+                else:
+                    return vision
+
+            if mat_connue[i][j] == GardeOuest and j - v >= 0:
+                if mat_connue[i][j - v] == empty or mat_connue[i][j - v] == Target:
+
+                    vision.append((i, j - v))
+                else:
+                    return vision
+
+        return vision
+    
 
     def phase_2(self):
         print("--------------------")
@@ -919,7 +1038,40 @@ class Agent_Hitman:
             if possede_costume and not self.is_seen():
                 self.oracle.put_on_suit()
 
+            
+            neighbours = [(self.translate_ligne(self._x)+1, self._y), (self.translate_ligne(self._x)-1, self._y), (self.translate_ligne(self._x), self._y+1), (self.translate_ligne(self._x), self._y-1)]
+            
+            
+            for ngb in neighbours:
+                #print("case ngb : ", self.mat_connue[ngb[0]][ngb[1]])
+              
+                if not self.check_coord(ngb[0], ngb[1]):
+                    continue
+                if self.mat_connue[ngb[0]][ngb[1]] == GardeEst or self.mat_connue[ngb[0]][ngb[1]] == GardeNord or self.mat_connue[ngb[0]][ngb[1]] == GardeOuest or self.mat_connue[ngb[0]][ngb[1]] == GardeSud or self.mat_connue[ngb[0]][ngb[1]] == InviteNord or self.mat_connue[ngb[0]][ngb[1]] == InviteSud or self.mat_connue[ngb[0]][ngb[1]] == InviteEst or self.mat_connue[ngb[0]][ngb[1]] == InviteOuest:
+                    # Regarder si ce garde regarde la cible : 
+                    # Si oui on le tue
+                    # Sinon on passe devant lui
+                    
+                    
+                    
+                    regards_garde = self.get_vision_guard(ngb)
+                    
+                    for rg in regards_garde:
+                        target_pos = self.find_stg(Target)
+                        if rg == target_pos:
+
+                            self.best_turn(ngb[0], ngb[1])
+                            if self.mat_connue[ngb[0]][ngb[1]] == GardeEst or self.mat_connue[ngb[0]][ngb[1]] == GardeNord or self.mat_connue[ngb[0]][ngb[1]] == GardeOuest or self.mat_connue[ngb[0]][ngb[1]] == GardeSud:
+
+                                self.oracle.neutralize_guard()
+
+                            else: 
+                                self.oracle.neutralize_civil()
+                            self.mat_connue[ngb[0]][ngb[1]] = empty
+
+
             print(self)
 
         _, score, history = self.oracle.end_phase2()
         print("score : ", score)
+        print("history : ", history)
