@@ -39,7 +39,7 @@ son champ de vision.
 #### STRIPS :
 
 ##### Fluents : 
-Orientation(actuelle), Position(Hitman, x, y), Sur_case(cible, x, y), Sur_case(corde_de_piano, x, y), Sur_case(costume, x, y), Sur_case(civil, x, y), Sur_case(garde, x, y), Regarde(vous, garde), Regarde(vous, civil), Regarde(vous, Hitman), Possède(corde_de_piano), Possède(costume), Avance_possible(x, y), Garde_present(Garde, x, y), Civil_present(Civil, x, y)
+Orientation(actuelle), Position(Hitman, x, y), Sur_case(cible, x, y), Sur_case(corde_de_piano, x, y), Sur_case(costume, x, y), Sur_case(civil, x, y), Sur_case(garde, x, y), Regarde(Hitman, garde), Regarde(Hitman, civil),  Regarde(garde, cible), Possède(corde_de_piano), Possède(costume), Avance_possible(x, y), Garde_present(Garde, x, y), Civil_present(Civil, x, y)
 
 Init(
     Position(Hitman, 0,0)
@@ -125,57 +125,58 @@ EFFECT: ¬Sur_case(cible, x, y), ¬Position(Hitman, x, y) )
 
 * Action(neutraliser_garde(Hitman, Garde, x, y, x+1, y), 
 
-PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x+1, y) ∧ ¬Regarde(vous, garde),
-∧ Orientation(actuelle) = nord, 
+PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x+1, y) ∧ ¬Regarde(Hitman, garde),
+∧ Orientation(actuelle) = nord ∧ regarde(garde, cible),
 
-EFFECT: ¬Garde_present(Garde, x, y))
+EFFECT: ¬Garde_present(Garde, x, y), ¬regarde(garde, cible))
 
 * Action(neutraliser_garde(Hitman, Garde, x, y, x-1, y),
 
-PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x-1, y) ∧ ¬Regarde(vous, garde)
-∧ Orientation(actuelle) = sud,
+PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x-1, y) ∧ ¬Regarde(Hitman, garde)
+∧ Orientation(actuelle) = sud, 
 
-EFFECT: ¬Garde_present(Garde, x, y))
+
+EFFECT: ¬Garde_present(Garde, x, y), ¬regarde(garde, cible))
 
 * Action(neutraliser_garde(Hitman, Garde, x, y, x, y+1),
 
-PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x, y+1) ∧ ¬Regarde(vous, garde)
-∧ Orientation(actuelle) = est,
+PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x, y+1) ∧ ¬Regarde(Hitman, garde)
+∧ Orientation(actuelle) = est ∧ regarde(garde, cible),
 
 EFFECT: ¬Garde_present(Garde, x, y))
 
 * Action(neutraliser_garde(Hitman, Garde, x, y, x, y-1),
 
-PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x, y-1) ∧ ¬Regarde(vous, garde)
-∧ Orientation(actuelle) = ouest,
+PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x, y-1) ∧ ¬Regarde(Hitman, garde)
+∧ Orientation(actuelle) = ouest ∧ regarde(garde, cible)
 
-EFFECT: ¬Garde_present(Garde, x, y))
+EFFECT: ¬Garde_present(Garde, x, y), ¬regarde(garde, cible))
 
 
 * Action(neutraliser_civil(Hitman, Civil, x, y, x+1, y), 
 
-PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x+1, y) ∧ ¬Regarde(vous, civil)
-∧ Orientation(actuelle) = nord,
+PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x+1, y) ∧ ¬Regarde(Hitman, civil)
+∧ Orientation(actuelle) = nord ∧ regarde(garde, cible),
 
-EFFECT: ¬Civil_present(Civil, x, y))
+EFFECT: ¬Civil_present(Civil, x, y), ¬regarde(garde, cible))
 
 * Action(neutraliser_civil(Hitman, Civil, x, y, x-1, y),
 
-PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x-1, y) ∧ ¬Regarde(vous, civil)
+PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x-1, y) ∧ ¬Regarde(Hitman, civil)
 ∧ Orientation(actuelle) = sud,
 
 EFFECT: ¬Civil_present(Civil, x, y))
 
 * Action(neutraliser_civil(Hitman, Civil, x, y, x, y+1),
 
-PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x, y+1) ∧ ¬Regarde(vous, civil)
+PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x, y+1) ∧ ¬Regarde(Hitman, civil)
 ∧ Orientation(actuelle) = est,
 
 EFFECT: ¬Civil_present(Civil, x, y))
 
 * Action(neutraliser_civil(Hitman, Civil, x, y, x, y-1),
 
-PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x, y-1) ∧ ¬Regarde(vous, civil)
+PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x, y-1) ∧ ¬Regarde(Hitman, civil)
 ∧ Orientation(actuelle) = ouest,
 
 EFFECT: ¬Civil_present(Civil, x, y))
