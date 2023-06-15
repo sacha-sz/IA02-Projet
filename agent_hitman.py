@@ -1,66 +1,7 @@
-from hitman import *
 from gophersat import *
 from collections import deque
 import copy
 import heapq
-
-
-def reconstruct_path(came_from, current):
-    path = []
-    while current in came_from:
-        path.append(current)
-        current = came_from[current]
-    return path[::-1]
-
-
-def calculate_heuristic(current, goal):
-    # Manhattan distance heuristic
-    return abs(current[0] - goal[0]) + abs(current[1] - goal[1])
-
-
-def convert(var) -> HC:
-    if var == empty:
-        return HC.EMPTY
-    elif var == wall:
-        return HC.WALL
-    elif var == GardeEst:
-        return HC.GUARD_E
-    elif var == GardeNord:
-        return HC.GUARD_N
-    elif var == GardeOuest:
-        return HC.GUARD_W
-    elif var == GardeSud:
-        return HC.GUARD_S
-    elif var == InviteEst:
-        return HC.CIVIL_E
-    elif var == InviteNord:
-        return HC.CIVIL_N
-    elif var == InviteOuest:
-        return HC.CIVIL_W
-    elif var == InviteSud:
-        return HC.CIVIL_S
-    elif var == Costume:
-        return HC.SUIT
-    elif var == Target:
-        return HC.TARGET
-    elif var == Corde:
-        return HC.PIANO_WIRE
-    else:
-        raise ValueError("Valeur inconnue : " + str(var))
-
-
-def case_devant_nous(x: int, y: int, orientation: HC) -> Tuple[int, int]:
-    if orientation == HC.E:
-        return x, y + 1
-
-    elif orientation == HC.W:
-        return x, y - 1
-
-    elif orientation == HC.N:
-        return x - 1, y
-
-    elif orientation == HC.S:
-        return x + 1, y
 
 
 class Agent_Hitman:
@@ -88,6 +29,7 @@ class Agent_Hitman:
 
         self.mat_connue = [[self.unknown] * self.max_C for _ in range(self.max_L)]
         self.mat_connue[self.translate_ligne(self._x)][self._y] = empty
+        self.sat_connue[self.translate_ligne(self._x)][self._y] = SAT_NP
 
         self.mat_regard = [[0] * self.max_C for _ in range(self.max_L)]
         self.mat_regard_invite = [[0] * self.max_C for _ in range(self.max_L)]
@@ -111,6 +53,7 @@ class Agent_Hitman:
             row_str = f'{str(self.translate_ligne(i)).rjust(len(str(self.max_L)))} |'
             for j in range(self.max_C):
                 element = self.mat_connue[i][j]
+                # element = self.sat_connue[i][j]
                 if self.translate_ligne(self._x) == i and self._y == j:
                     element += " H"
                     orientation_dict = {
@@ -131,119 +74,27 @@ class Agent_Hitman:
         output.append(ligne_col)
         output.append("\n")
 
+        # On affiche la matrice sat_regard qui contient des nombres flottant
+        border = '-' * (len(str(self.max_L)) + 1)
+        border += '+' + '-' * ((max_length + 2) * self.max_C + self.max_L) + '+'
+        output += [border]
+
+        for i in range(self.max_L):
+            row = f'{str(self.translate_ligne(i)).rjust(len(str(self.max_L)))} |'
+            for j in range(self.max_C):
+                # self.sat_regard[i][j] = round(self.sat_regard[i][j], 2)
+                val = self.sat_regard[i][j]
+                row += f' {str(val).center(max_length)} |'
+            output.append(row)
+            output.append(border)
+
+        ligne_col = ' ' * (len(str(self.max_L)) + 1) + '|'
+        for i in range(self.max_C):
+            ligne_col += f' {str(i).center(max_length)} |'
+        output.append(ligne_col)
+        output.append("\n")
+
         return '\n'.join(output)
-
-    def generate_neighboors(self, indice_ligne: int, indice_colonne: int) -> LC:
-        """
-        Fonction qui genere les voisins d'une case donnee
-        """
-        liste_voisins = []
-
-        for change_ligne in range(-MAX_OUIE, MAX_OUIE + 1):
-            for change_col in range(-MAX_OUIE, MAX_OUIE + 1):
-                liste_voisins.append(
-                    [indice_ligne + change_ligne, indice_colonne + change_col])
-
-        liste_voisins = [voisin for voisin in liste_voisins if self.check_coord(voisin[0], voisin[1])]
-        return liste_voisins
-
-    def ajout_info_mat(self, ligne: int, colonne: int, info: str) -> None:
-        """
-        Ajoute une information dans la matrice de connaissance et convertit la ligne
-        """
-
-        ligne = self.translate_ligne(ligne)
-        if self.check_coord(ligne, colonne):
-            self.mat_connue[ligne][colonne] = info
-
-            # Si garde on ajoute sa vision
-            if info.startswith("G"):
-                self.add_vision_garde(ligne, colonne)
-
-            if info.startswith("I"):
-                self.add_vision_invite(ligne, colonne)
-
-            # On ajoute sur la matrice SAT
-            if self.sat:
-                if info.startswith("G"):
-                    self.sat_connue[ligne][colonne] = SAT_GARDE
-                elif info.startswith("I"):
-                    self.sat_connue[ligne][colonne] = SAT_INVITE
-                else:
-                    self.sat_connue[ligne][colonne] = SAT_NP
-
-            self.verif_vision()
-            self.verif_vision_invite()
-
-    def add_vision_invite(self, ligne: int, colonne: int) -> None:
-        if self.check_coord(ligne, colonne):
-            if self.mat_connue[ligne][colonne] == InviteSud:
-                for i in range(1, MAX_VISION_INVITE + 1):
-                    if ligne + i < self.max_L:
-                        self.mat_regard_invite[ligne + i][colonne] += 1
-            elif self.mat_connue[ligne][colonne] == InviteNord:
-                print("invite regarde au nord")
-                for i in range(1, MAX_VISION_INVITE + 1):
-                    if ligne - i >= 0:
-                        self.mat_regard_invite[ligne - i][colonne] += 1
-            elif self.mat_connue[ligne][colonne] == InviteEst:
-                for i in range(1, MAX_VISION_INVITE + 1):
-                    if colonne + i < self.max_C:
-                        self.mat_regard_invite[ligne][colonne + i] += 1
-            elif self.mat_connue[ligne][colonne] == InviteOuest:
-                for i in range(1, MAX_VISION_INVITE + 1):
-                    if colonne - i >= 0:
-                        self.mat_regard_invite[ligne][colonne - i] += 1
-            else:
-                print("Ce n'est pas un invite qui est en (" + str(ligne) + ", " + str(colonne) + ")")
-
-    def verif_vision_invite(self):
-        for i in range(len(self.mat_regard_invite)):
-            for j in range(len(self.mat_regard_invite)):
-                if self.mat_connue[i][j].startswith("I"):
-                    vision_bloque = False
-                    for v in range(1, MAX_VISION_INVITE + 1):
-                        if self.mat_connue[i][j] == InviteSud and i + v < self.max_L:
-                            if self.mat_connue[i + v][j] != empty and self.mat_connue[i + v][j] != self.unknown:
-                                vision_bloque = True
-
-                            if vision_bloque:
-                                self.mat_regard_invite[i + v][j] = max(0, self.mat_regard_invite[i + v][j] - 1)
-
-                        elif self.mat_connue[i][j] == InviteNord and i - v >= 0:
-
-                            if self.mat_connue[i - v][j] != empty and self.mat_connue[i - v][j] != self.unknown:
-                                vision_bloque = True
-
-                            if vision_bloque:
-                                self.mat_regard_invite[i - v][j] = max(0, self.mat_regard_invite[i - v][j] - 1)
-
-                        elif self.mat_connue[i][j] == InviteEst and j + v < self.max_C:
-
-                            if self.mat_connue[i][j + v] != empty and self.mat_connue[i][j + v] != self.unknown:
-                                vision_bloque = True
-
-                            if vision_bloque:
-                                self.mat_regard_invite[i][j + v] = max(0, self.mat_regard_invite[i][j + v] - 1)
-
-                        elif self.mat_connue[i][j] == InviteOuest and j - v >= 0:
-                            if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != self.unknown:
-                                vision_bloque = True
-
-                            if vision_bloque:
-                                self.mat_regard_invite[i][j - v] = max(0, self.mat_regard_invite[i][j - v] - 1)
-
-    def gardes_tous_trouves(self) -> bool:
-        """
-        On vérifie si on a trouvé tous les gardes
-        """
-        return len(self.loc_gardes) == self.nb_gardes
-
-    def invites_tous_trouves(self) -> bool:
-        """
-        On vérifie si on a trouvé tous les invités
-        """
-        return len(self.loc_invites) == self.nb_invites
 
     def check_coord(self, ligne, colonne) -> bool:
         """
@@ -349,72 +200,269 @@ class Agent_Hitman:
             new_certitudes = [(self.translate_ligne(x[0]), x[1], x[2]) for x in certitudes]
             self.gophersat.ajout_clauses_voir(new_certitudes)
 
-    def test(self, x: int, y: int) -> None:
+    def generate_neighboors(self, indice_ligne: int, indice_colonne: int) -> LC:
         """
-        Demande à gophersat s'il y a la présence d'une personne.
+        Fonction qui genere les voisins d'une case donnee
+        """
+        liste_voisins = []
+
+        for change_ligne in range(-MAX_OUIE, MAX_OUIE + 1):
+            for change_col in range(-MAX_OUIE, MAX_OUIE + 1):
+                liste_voisins.append(
+                    [indice_ligne + change_ligne, indice_colonne + change_col])
+
+        liste_voisins = [voisin for voisin in liste_voisins if self.check_coord(voisin[0], voisin[1])]
+        return liste_voisins
+
+    def add_vision_sat(self, ligne: int, colonne: int, newtype: str, oldtype: str) -> None:
+        """
+        Ajoute la vision d'un type dans la matrice de vision SAT :
+        - P? : + 0.1
+        - P : + 1
+        - G : + 5
+        - NP : + 0
+        """
+        if not self.sat:
+            return
+        dict_valeur = {
+            self.unknown: 0.0,
+            SAT_NP: 0,
+            SAT_INVITE: 0,
+            SAT_PROBA_PERSONNE: 1,
+            SAT_PERSONNE: 5,
+            SAT_GARDE: 10
+        }
+
+        if self.check_coord(ligne, colonne) and newtype != oldtype and \
+                newtype in [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE] and \
+                oldtype in [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE, self.unknown]:
+            print("Avant : ", oldtype, "->", end=" ")
+            print("Newtype : ", newtype, " en : ", ligne, colonne)
+
+            difference = dict_valeur[newtype] - dict_valeur[oldtype]
+
+            if difference != 0:
+                deltas = [(0, 1), (0, -1), (1, 0), (-1, 0),
+                          (0, 2), (0, -2), (2, 0), (-2, 0)]
+
+                for delta in deltas:
+                    if self.check_coord(ligne + delta[0], colonne + delta[1]):
+                        val = self.sat_regard[ligne + delta[0]][colonne + delta[1]] + difference
+                        self.sat_regard[ligne + delta[0]][colonne + delta[1]] = max(0, val)
+
+    def verif_vision_sat(self) -> None:
+        """
+        On limite la vision de la matrice de vision SAT
         """
         if not self.sat:
             return
 
-        res = self.gophersat.test_personne((x, y))
-        if res == 0:
-            pass
-        elif res == 1:
-            if self.gophersat.test_type((x, y, SAT_GARDE)):
-                self.sat_connue[x][y] = SAT_GARDE
-                self.add_vision_garde(x, y)
-            elif self.gophersat.test_type((x, y, SAT_INVITE)):
-                self.sat_connue[x][y] = SAT_INVITE
+        deltas = [(0, 1), (0, -1), (1, 0), (-1, 0), (0, 2), (0, -2), (2, 0), (-2, 0)]
+
+        for i in range(self.max_L):
+            for j in range(self.max_C):
+                vision_bloque = False
+
+                if self.sat_connue[i][j] == SAT_GARDE and (i, j) not in self.loc_gardes:
+                    # Nous n'avons pas encore vu ce garde nous ne l'avons que déduit
+                    # On ne connaît pas son orientation donc nous vérifions en croix
+                    for delt in deltas:
+                        if self.check_coord(i + delt[0], j + delt[1]) and \
+                                self.mat_connue[i + delt[0]][j + delt[1]] != empty and \
+                                self.mat_connue[i + delt[0]][j + delt[1]] != self.unknown:
+                            vision_bloque = True
+
+                        if vision_bloque and self.check_coord(i + delt[0], j + delt[1]):
+                            self.sat_regard[i + delt[0]][j + delt[1]] = max(0, self.sat_regard[i + delt[0]][
+                                j + delt[1]] - 10)
+
+                elif self.sat_connue[i][j] == SAT_GARDE and (i, j) in self.loc_gardes:
+                    # On connaît son orientation donc on vérifie en ligne
+                    # On récupère l'orientation du garde
+                    type = self.mat_connue[i][j]
+
+                    for v in range(1, MAX_VISION_GARDE + 1):
+                        if type == GardeNord:
+                            if self.check_coord(i - v, j) and \
+                                    self.mat_connue[i - v][j] != empty and \
+                                    self.mat_connue[i - v][j] != self.unknown:
+                                vision_bloque = True
+
+                            if vision_bloque and self.check_coord(i - v, j):
+                                self.sat_regard[i - v][j] = max(0, self.sat_regard[i - v][j] - 10)
+
+                        elif type == GardeSud:
+                            if self.check_coord(i + v, j) and \
+                                    self.mat_connue[i + v][j] != empty and \
+                                    self.mat_connue[i + v][j] != self.unknown:
+                                vision_bloque = True
+
+                            if vision_bloque and self.check_coord(i + v, j):
+                                self.sat_regard[i + v][j] = max(0, self.sat_regard[i + v][j] - 10)
+
+                        elif type == GardeEst:
+                            if self.check_coord(i, j + v) and \
+                                    self.mat_connue[i][j + v] != empty and \
+                                    self.mat_connue[i][j + v] != self.unknown:
+                                vision_bloque = True
+
+                            if vision_bloque and self.check_coord(i, j + v):
+                                self.sat_regard[i][j + v] = max(0, self.sat_regard[i][j + v] - 10)
+
+                        elif type == GardeOuest:
+                            if self.check_coord(i, j - v) and \
+                                    self.mat_connue[i][j - v] != empty and \
+                                    self.mat_connue[i][j - v] != self.unknown:
+                                vision_bloque = True
+
+                            if vision_bloque and self.check_coord(i, j - v):
+                                self.sat_regard[i][j - v] = max(0, self.sat_regard[i][j - v] - 10)
+
+                elif self.sat_connue[i][j] == SAT_PROBA_PERSONNE:
+                    for delt in deltas:
+                        if self.check_coord(i + delt[0], j + delt[1]) and \
+                                self.mat_connue[i + delt[0]][j + delt[1]] != empty and \
+                                self.mat_connue[i + delt[0]][j + delt[1]] != self.unknown:
+                            vision_bloque = True
+
+                        if vision_bloque and self.check_coord(i + delt[0], j + delt[1]):
+                            self.sat_regard[i + delt[0]][j + delt[1]] = max(0, self.sat_regard[i + delt[0]][
+                                j + delt[1]] - 1)
+
+                elif self.sat_connue[i][j] == SAT_PERSONNE:
+                    for delt in deltas:
+                        if self.check_coord(i + delt[0], j + delt[1]) and \
+                                self.mat_connue[i + delt[0]][j + delt[1]] != empty and \
+                                self.mat_connue[i + delt[0]][j + delt[1]] != self.unknown:
+                            vision_bloque = True
+
+                        if vision_bloque and self.check_coord(i + delt[0], j + delt[1]):
+                            self.sat_regard[i + delt[0]][j + delt[1]] = max(0, self.sat_regard[i + delt[0]][
+                                j + delt[1]] - 5)
+
+    def ajout_info_mat(self, ligne: int, colonne: int, info: str) -> None:
+        """
+        Ajoute une information dans la matrice de connaissance et convertit la ligne
+        """
+
+        ligne = self.translate_ligne(ligne)
+        if self.check_coord(ligne, colonne):
+            self.mat_connue[ligne][colonne] = info
+
+            # Si garde on ajoute sa vision
+            if info.startswith("G"):
+                self.add_vision_garde(ligne, colonne)
+
+            if info.startswith("I"):
+                self.add_vision_invite(ligne, colonne)
+
+            # On ajoute sur la matrice SAT
+            if self.sat:
+                avant = self.sat_connue[ligne][colonne]
+                if info.startswith("G"):
+                    self.sat_connue[ligne][colonne] = SAT_GARDE
+                    self.add_vision_sat(ligne, colonne, SAT_GARDE, avant)
+                elif info.startswith("I"):
+                    self.sat_connue[ligne][colonne] = SAT_INVITE
+                    self.add_vision_sat(ligne, colonne, SAT_INVITE, avant)
+                else:
+                    self.sat_connue[ligne][colonne] = SAT_NP
+                    self.add_vision_sat(ligne, colonne, SAT_NP, avant)
+                self.verif_vision_sat()
+
+            self.verif_vision()
+            self.verif_vision_invite()
+
+    def add_vision_invite(self, ligne: int, colonne: int) -> None:
+        if self.check_coord(ligne, colonne):
+            if self.mat_connue[ligne][colonne] == InviteSud:
+                for i in range(1, MAX_VISION_INVITE + 1):
+                    if ligne + i < self.max_L:
+                        self.mat_regard_invite[ligne + i][colonne] += 1
+            elif self.mat_connue[ligne][colonne] == InviteNord:
+                for i in range(1, MAX_VISION_INVITE + 1):
+                    if ligne - i >= 0:
+                        self.mat_regard_invite[ligne - i][colonne] += 1
+            elif self.mat_connue[ligne][colonne] == InviteEst:
+                for i in range(1, MAX_VISION_INVITE + 1):
+                    if colonne + i < self.max_C:
+                        self.mat_regard_invite[ligne][colonne + i] += 1
+            elif self.mat_connue[ligne][colonne] == InviteOuest:
+                for i in range(1, MAX_VISION_INVITE + 1):
+                    if colonne - i >= 0:
+                        self.mat_regard_invite[ligne][colonne - i] += 1
             else:
-                self.sat_connue[x][y] = SAT_PERSONNE
-        else:
-            self.sat_connue[x][y] = SAT_NP
+                print("Ce n'est pas un invite qui est en (" + str(ligne) + ", " + str(colonne) + ")")
+
+    def verif_vision_invite(self):
+        for i in range(len(self.mat_regard_invite)):
+            for j in range(len(self.mat_regard_invite)):
+                if self.mat_connue[i][j].startswith("I"):
+                    vision_bloque = False
+                    for v in range(1, MAX_VISION_INVITE + 1):
+                        if self.mat_connue[i][j] == InviteSud and i + v < self.max_L:
+                            if self.mat_connue[i + v][j] != empty and self.mat_connue[i + v][j] != self.unknown:
+                                vision_bloque = True
+
+                            if vision_bloque:
+                                self.mat_regard_invite[i + v][j] = max(0, self.mat_regard_invite[i + v][j] - 1)
+
+                        elif self.mat_connue[i][j] == InviteNord and i - v >= 0:
+
+                            if self.mat_connue[i - v][j] != empty and self.mat_connue[i - v][j] != self.unknown:
+                                vision_bloque = True
+
+                            if vision_bloque:
+                                self.mat_regard_invite[i - v][j] = max(0, self.mat_regard_invite[i - v][j] - 1)
+
+                        elif self.mat_connue[i][j] == InviteEst and j + v < self.max_C:
+
+                            if self.mat_connue[i][j + v] != empty and self.mat_connue[i][j + v] != self.unknown:
+                                vision_bloque = True
+
+                            if vision_bloque:
+                                self.mat_regard_invite[i][j + v] = max(0, self.mat_regard_invite[i][j + v] - 1)
+
+                        elif self.mat_connue[i][j] == InviteOuest and j - v >= 0:
+                            if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != self.unknown:
+                                vision_bloque = True
+
+                            if vision_bloque:
+                                self.mat_regard_invite[i][j - v] = max(0, self.mat_regard_invite[i][j - v] - 1)
+
+    def gardes_tous_trouves(self) -> bool:
+        """
+        On vérifie si on a trouvé tous les gardes
+        """
+        return len(self.loc_gardes) == self.nb_gardes
+
+    def invites_tous_trouves(self) -> bool:
+        """
+        On vérifie si on a trouvé tous les invités
+        """
+        return len(self.loc_invites) == self.nb_invites
 
     def add_vision_garde(self, ligne: int, colonne: int) -> None:
         if self.check_coord(ligne, colonne):
-            if self.sat:
-                if (self.sat_connue[ligne][colonne] == SAT_GARDE or
-                    self.sat_connue[ligne][colonne] == SAT_PERSONNE) and \
-                        self.mat_connue[ligne][colonne] == self.unknown:
-                    deltas = [(0, 1), (0, -1), (1, 0), (-1, 0), (0, 2), (0, -2), (2, 0), (-2, 0)]
-                    for delta in deltas:
-                        if self.check_coord(ligne + delta[0], colonne + delta[1]):
-                            self.sat_regard[ligne + delta[0]][colonne + delta[1]] += 1
-                elif self.sat_connue[ligne][colonne] == SAT_GARDE or \
-                        self.sat_connue[ligne][colonne] == SAT_PERSONNE:
-                    deltas = [(0, 1), (0, -1), (1, 0), (-1, 0), (0, 2), (0, -2), (2, 0), (-2, 0)]
-                    for delta in deltas:
-                        if self.check_coord(ligne + delta[0], colonne + delta[1]):
-                            self.sat_regard[ligne + delta[0]][colonne + delta[1]] = max(0, self.sat_regard[
-                                ligne + delta[0]][colonne + delta[1]] - 1)
-
             if self.mat_connue[ligne][colonne] == GardeSud:
                 for i in range(1, MAX_VISION_GARDE + 1):
                     if ligne + i < self.max_L:
                         self.mat_regard[ligne + i][colonne] += 5
-                        if self.sat:
-                            self.sat_regard[ligne + i][colonne] += 1
 
             elif self.mat_connue[ligne][colonne] == GardeNord:
                 for i in range(1, MAX_VISION_GARDE + 1):
                     if ligne - i >= 0:
                         self.mat_regard[ligne - i][colonne] += 5
-                        if self.sat:
-                            self.sat_regard[ligne - i][colonne] += 1
 
             elif self.mat_connue[ligne][colonne] == GardeEst:
                 for i in range(1, MAX_VISION_GARDE + 1):
                     if colonne + i < self.max_C:
                         self.mat_regard[ligne][colonne + i] += 5
-                        if self.sat:
-                            self.sat_regard[ligne][colonne + i] += 1
 
             elif self.mat_connue[ligne][colonne] == GardeOuest:
                 for i in range(1, MAX_VISION_GARDE + 1):
                     if colonne - i >= 0:
                         self.mat_regard[ligne][colonne - i] += 5
-                        if self.sat:
-                            self.sat_regard[ligne][colonne - i] += 1
             else:
                 print("Ce n'est pas un garde qui est en (" + str(ligne) + ", " + str(colonne) + ")")
 
@@ -440,8 +488,7 @@ class Agent_Hitman:
                                 if self.mat_connue[i + v][j] == Target:
                                     continue
                                 self.mat_regard[i + v][j] = max(0, self.mat_regard[i + v][j] - 5)
-                                if self.sat:
-                                    self.sat_regard[i + v][j] = max(0, self.sat_regard[i + v][j] - 1)
+
 
                         elif self.mat_connue[i][j] == GardeNord and i - v >= 0:
 
@@ -452,8 +499,6 @@ class Agent_Hitman:
                                 if self.mat_connue[i - v][j] == Target:
                                     continue
                                 self.mat_regard[i - v][j] = max(0, self.mat_regard[i - v][j] - 5)
-                                if self.sat:
-                                    self.sat_regard[i - v][j] = max(0, self.sat_regard[i - v][j] - 1)
 
                         elif self.mat_connue[i][j] == GardeEst and j + v < self.max_C:
 
@@ -464,8 +509,6 @@ class Agent_Hitman:
                                 if self.mat_connue[i][j + v] == Target:
                                     continue
                                 self.mat_regard[i][j + v] = max(0, self.mat_regard[i][j + v] - 5)
-                                if self.sat:
-                                    self.sat_regard[i][j + v] = max(0, self.sat_regard[i][j + v] - 1)
 
                         elif self.mat_connue[i][j] == GardeOuest and j - v >= 0:
                             if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != self.unknown:
@@ -475,22 +518,12 @@ class Agent_Hitman:
                                 if self.mat_connue[i][j - v] == Target:
                                     continue
                                 self.mat_regard[i][j - v] = max(0, self.mat_regard[i][j - v] - 5)
-                                if self.sat:
-                                    self.sat_regard[i][j - v] = max(0, self.sat_regard[i][j - v] - 1)
 
     def incomplete_mat(self) -> bool:
         """
         On regarde si la matrice est complète ou non, on recherche le premier élément inconnu
         """
         return any(self.unknown in row for row in self.mat_connue)
-
-    def est_sur_bord(self, position: PS) -> bool:
-        bord_haut = self.max_L - 1
-        bord_bas = 0
-        bord_gauche = 0
-        bord_droit = self.max_C - 1
-        x, y = position
-        return x in (bord_haut, bord_bas) or y in (bord_gauche, bord_droit)
 
     def inconnue_plus_proche(self) -> List[Tuple[int, int, int]]:
         """
@@ -611,6 +644,8 @@ class Agent_Hitman:
         """
         self.entendre()
         self.voir()
+        if self.sat:
+            self.sat_utilisation()
 
         deltas = [(-1, 0), (0, 1), (1, 0), (0, -1)]
         pos_x = self.translate_ligne(self._x)
@@ -649,7 +684,6 @@ class Agent_Hitman:
             self.info_actuelle = self.oracle.turn_anti_clockwise()
 
         self.voir()
-        print(self)
 
     def conversion_mat_connue(self) -> Dict[Tuple[int, int], HC]:
         """
@@ -706,6 +740,48 @@ class Agent_Hitman:
             while self.coords_case_devant_nous() != (x, y):
                 self.turn(False)
 
+    def sat_utilisation(self) -> None:
+        """
+        On récupère toutes les positions des cases inconnues. On test si ce sont des personnees.
+        Si c'est le cas, on ajoute le coût dans sat_regard.
+        On update dans tous les cas sat_connue
+        """
+        if self.gardes_tous_trouves() and not self.invites_tous_trouves():
+            self.gophersat.garde_max_trouve()
+
+        if self.invites_tous_trouves() and not self.gardes_tous_trouves():
+            self.gophersat.invite_max_trouve()
+
+        if self.gardes_tous_trouves() and self.invites_tous_trouves():
+            self.gophersat.personne_max_trouve()
+
+        for i in range(self.max_L):
+            for j in range(self.max_C):
+                avant = self.sat_connue[i][j]
+                if avant in [SAT_PERSONNE or self.sat_connue[i][j] == SAT_PROBA_PERSONNE, self.unknown]:
+                    res = self.gophersat.test_personne((i, j))
+                    if res == 1:
+                        res_p = self.gophersat.test_type((i, j, "G"))
+                        if res_p == 1:
+                            self.sat_connue[i][j] = SAT_GARDE
+                            self.add_vision_sat(i, j, SAT_GARDE, avant)
+                        else:
+                            res_p = self.gophersat.test_type((i, j, "I"))
+                            if res_p == 1:
+                                self.sat_connue[i][j] = SAT_INVITE
+                                self.add_vision_sat(i, j, SAT_INVITE, avant)
+                            else:
+                                self.sat_connue[i][j] = SAT_PERSONNE
+                                self.add_vision_sat(i, j, SAT_PERSONNE, avant)
+                    elif res == 0:
+                        self.sat_connue[i][j] = SAT_PROBA_PERSONNE
+                        self.add_vision_sat(i, j, SAT_PROBA_PERSONNE, avant)
+                    else:
+                        self.sat_connue[i][j] = SAT_NP
+                        self.add_vision_sat(i, j, SAT_NP, avant)
+
+        self.verif_vision_sat()
+
     def phase_1(self, sat: bool = False) -> None:
         """
         On fait un tour de jeu du hitman.
@@ -723,6 +799,9 @@ class Agent_Hitman:
         actual_target = None
 
         while self.incomplete_mat():
+            if self.sat:
+                self.sat_utilisation()
+
             for ngb in self.get_neighbours((self.translate_ligne(self._x), self._y)):
                 if self.mat_connue[ngb[0]][ngb[1]] == self.unknown:
                     self.best_turn(ngb[0], ngb[1])
@@ -748,28 +827,22 @@ class Agent_Hitman:
                     self.best_turn(next_action[0], next_action[1])
                     self.move()
 
-                if self.sat:
-                    if not self.gardesTrouves and self.gardes_tous_trouves():
-                        self.gardesTrouves = True
-                        self.gophersat.garde_max_trouve()
-                        if self.invitesTrouves:
-                            self.gophersat.personne_max_trouve()
-
-                    if not self.invitesTrouves and self.invites_tous_trouves():
-                        self.gardesTrouves = True
-                        self.gophersat.invite_max_trouve()
-                        if self.gardesTrouves:
-                            self.gophersat.personne_max_trouve()
-
+            print(self)
             if not self.incomplete_mat():
                 break
-
-        # print("penalites : ", self.info_actuelle["penalties"])
 
         self.oracle.send_content(self.conversion_mat_connue())
         _, score, history, true_map = self.oracle.end_phase1()
         print(score)
         self.phase1 = False
+
+    """
+    --------------------------------------------------------------------------------------------------------------------
+    
+    -------------------------------------------------- PHASE 2 ---------------------------------------------------------
+    
+    --------------------------------------------------------------------------------------------------------------------
+    """
 
     def find_stg(self, stg: str) -> Tuple[int, int]:
         for i in range(len(self.mat_connue)):
@@ -876,7 +949,7 @@ class Agent_Hitman:
                           (coord[0], coord[1] - 1)]
             for neighbour in neighbours:
                 if self.check_coord(neighbour[0], neighbour[1]) and mat_connue_copie[neighbour[0]][
-                        neighbour[1]].startswith("G"):
+                    neighbour[1]].startswith("G"):
                     vision = self.get_vision_guard(neighbour, mat_connue_copie)
                     target_pos = self.find_stg(Target)
                     for v in vision:
@@ -889,7 +962,7 @@ class Agent_Hitman:
                             for v2 in vision:
                                 mat_regard_copie[v2[0]][v2[1]] -= 5
                 if self.check_coord(neighbour[0], neighbour[1]) and mat_connue_copie[neighbour[0]][
-                        neighbour[1]].startswith("I"):
+                    neighbour[1]].startswith("I"):
                     vision = self.get_vision_invite(neighbour, mat_connue_copie)
                     target_pos = self.find_stg(Target)
                     for v in vision:

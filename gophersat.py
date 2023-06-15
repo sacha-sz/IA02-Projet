@@ -1,34 +1,5 @@
 import subprocess
 from variables import *
-from itertools import combinations
-
-
-def at_least_n(n: int, liste_litteraux: List[int]):
-    clauses = set()
-    for c in combinations(liste_litteraux, len(liste_litteraux) - (n - 1)):
-        clauses.add(tuple(c))
-    return clauses
-
-
-def at_most_n(n: int, liste_litteraux: List[int]):
-    clauses = set()
-    vars_neg = [i * -1 for i in liste_litteraux]
-    for c in combinations(vars_neg, n + 1):
-        clauses.add(tuple(c))
-    return clauses
-
-
-def exactly_n(n: int, liste_litteraux: List[int]):
-    if not liste_litteraux:
-        return []
-    if n == 0:
-        return at_most_n(0, liste_litteraux)
-    elif n == len(liste_litteraux):
-        return at_least_n(n, liste_litteraux)
-    clauses = at_most_n(n, liste_litteraux)
-    for cl in at_least_n(n, liste_litteraux):
-        clauses.add(cl)
-    return clauses
 
 
 class Gophersat:
@@ -157,7 +128,9 @@ class Gophersat:
         """
         for t in self.pos_inconnues:
             self.clauses.add((-self.dVar[(t[0], t[1], "P")]))
-            self.nClauses += 1
+            self.clauses.add((-self.dVar[(t[0], t[1], "G")]))
+            self.clauses.add((-self.dVar[(t[0], t[1], "I")]))
+            self.nClauses += 3
 
         self.write_file()
 
