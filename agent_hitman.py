@@ -134,56 +134,57 @@ class Agent_Hitman:
         for v in vision:
             pos_vision_x = v[0][1]
             pos_vision_y = v[0][0]
+            obj_vision = v[1]
 
-            if v[1] == HC.EMPTY:
+            if obj_vision == HC.EMPTY:
                 certitudes.append((pos_vision_x, pos_vision_y, "N"))
                 self.ajout_info_mat(pos_vision_x, pos_vision_y, empty)
 
-            elif v[1] in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W] and (
-                    pos_vision_x, pos_vision_y) not in self.loc_gardes:
-                certitudes.append((pos_vision_x, pos_vision_y, "G"))
-                self.loc_gardes.add((pos_vision_x, pos_vision_y))
-                if v[1] == HC.GUARD_N:
-                    self.ajout_info_mat(pos_vision_x, pos_vision_y, GardeNord)
+            elif obj_vision in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
+                if (pos_vision_x, pos_vision_y) in self.loc_gardes:
+                    certitudes.append((pos_vision_x, pos_vision_y, "G"))
+                else:
+                    certitudes.append((pos_vision_x, pos_vision_y, "G"))
+                    self.loc_gardes.add((pos_vision_x, pos_vision_y))
+                    if obj_vision == HC.GUARD_N:
+                        self.ajout_info_mat(pos_vision_x, pos_vision_y, GardeNord)
 
-                elif v[1] == HC.GUARD_S:
-                    self.ajout_info_mat(pos_vision_x, pos_vision_y, GardeSud)
+                    elif obj_vision == HC.GUARD_S:
+                        self.ajout_info_mat(pos_vision_x, pos_vision_y, GardeSud)
 
-                elif v[1] == HC.GUARD_E:
-                    self.ajout_info_mat(pos_vision_x, pos_vision_y, GardeEst)
+                    elif obj_vision == HC.GUARD_E:
+                        self.ajout_info_mat(pos_vision_x, pos_vision_y, GardeEst)
 
-                elif v[1] == HC.GUARD_W:
-                    self.ajout_info_mat(pos_vision_x, pos_vision_y, GardeOuest)
+                    elif obj_vision == HC.GUARD_W:
+                        self.ajout_info_mat(pos_vision_x, pos_vision_y, GardeOuest)
 
-            elif v[1] in [HC.GUARD_N, HC.GUARD_S, HC.GUARD_E, HC.GUARD_W]:
-                certitudes.append((pos_vision_x, pos_vision_y, "G"))
-
-            elif v[1] in [HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E, HC.CIVIL_W]:
+            elif obj_vision in [HC.CIVIL_N, HC.CIVIL_S, HC.CIVIL_E, HC.CIVIL_W]:
                 certitudes.append((pos_vision_x, pos_vision_y, "I"))
                 self.loc_invites.add((pos_vision_x, pos_vision_y))
 
-                if v[1] == HC.CIVIL_N:
+                if obj_vision == HC.CIVIL_N:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, InviteNord)
 
-                elif v[1] == HC.CIVIL_S:
+                elif obj_vision == HC.CIVIL_S:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, InviteSud)
 
-                elif v[1] == HC.CIVIL_E:
+                elif obj_vision == HC.CIVIL_E:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, InviteEst)
 
-                elif v[1] == HC.CIVIL_W:
+                elif obj_vision == HC.CIVIL_W:
                     self.ajout_info_mat(
                         pos_vision_x, pos_vision_y, InviteOuest)
 
             else:
                 certitudes.append((pos_vision_x, pos_vision_y, "N"))
-                if v[1] == HC.PIANO_WIRE:
+
+                if obj_vision == HC.PIANO_WIRE:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, Corde)
-                elif v[1] == HC.SUIT:
+                elif obj_vision == HC.SUIT:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, Costume)
-                elif v[1] == HC.WALL:
+                elif obj_vision == HC.WALL:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, wall)
-                elif v[1] == HC.TARGET:
+                elif obj_vision == HC.TARGET:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, Target)
 
         if self.sat:
@@ -198,10 +199,11 @@ class Agent_Hitman:
 
         for change_ligne in range(-MAX_OUIE, MAX_OUIE + 1):
             for change_col in range(-MAX_OUIE, MAX_OUIE + 1):
-                liste_voisins.append(
-                    [indice_ligne + change_ligne, indice_colonne + change_col])
+                voisin_ligne = indice_ligne + change_ligne
+                voisin_colonne = indice_colonne + change_col
+                if self.check_coord(voisin_ligne, voisin_colonne):
+                    liste_voisins.append([voisin_ligne, voisin_colonne])
 
-        liste_voisins = [voisin for voisin in liste_voisins if self.check_coord(voisin[0], voisin[1])]
         return liste_voisins
 
     def incomplete_mat(self) -> bool:
@@ -269,9 +271,10 @@ class Agent_Hitman:
         if not self.sat or newtype == oldtype or not self.check_coord(ligne, colonne):
             return
 
-        if newtype not in [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE, SAT_INVITE] or \
-                oldtype not in [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE, unknown, SAT_INVITE] or \
-                dict_valeur_sat[newtype] - dict_valeur_sat[oldtype] == 0:
+        allowed_types = [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE, unknown, SAT_INVITE]
+
+        if newtype not in allowed_types or oldtype not in allowed_types or \
+            dict_valeur_sat[newtype] - dict_valeur_sat[oldtype] == 0:
             return
 
         dir_deltas = [[(0, 1), (0, 2)],
@@ -281,10 +284,11 @@ class Agent_Hitman:
 
         for direction in dir_deltas:
             for deltas in direction:
-                if self.check_coord(ligne + deltas[0], colonne + deltas[1]):
+                new_coord = (ligne + deltas[0], colonne + deltas[1])
+                if self.check_coord(new_coord[0], new_coord[1]):
                     diff = dict_valeur_sat[newtype] - dict_valeur_sat[oldtype]
-                    new_val = self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] + diff
-                    self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] = max(0, new_val)
+                    new_val = max(0, self.sat_regard[new_coord[0]][new_coord[1]] + diff)
+                    self.sat_regard[new_coord[0]][new_coord[1]] = new_val
 
     def ajout_info_sat(self, ligne: int, colonne: int, newtype: str) -> None:
         """
@@ -296,7 +300,8 @@ class Agent_Hitman:
 
         oldtype = self.sat_connue[ligne][colonne]
 
-        if oldtype not in [SAT_PROBA_PERSONNE, SAT_PERSONNE, unknown, SAT_GARDE, SAT_INVITE]:
+        valid_types = [SAT_PROBA_PERSONNE, SAT_PERSONNE, unknown, SAT_GARDE, SAT_INVITE]
+        if oldtype not in valid_types:
             return
 
         dir_deltas = [[(0, 1), (0, 2)],
@@ -306,80 +311,84 @@ class Agent_Hitman:
 
         for direction in dir_deltas:
             for deltas in direction:
-                if self.check_coord(ligne + deltas[0], colonne + deltas[1]):
-                    new_val = self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] - dict_valeur_sat[oldtype]
-                    self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] = max(0, new_val)
+                new_ligne = ligne + deltas[0]
+                new_colonne = colonne + deltas[1]
+                if self.check_coord(new_ligne, new_colonne):
+                    new_val = self.sat_regard[new_ligne][new_colonne] - dict_valeur_sat[oldtype]
+                    self.sat_regard[new_ligne][new_colonne] = max(0, new_val)
 
         if newtype == SAT_GARDE:
             """
-            Je conaissais déjà la position de ce garde et je l'ai vu je connais enfin son orientation
-            Je peux donc mettre à jour les poids en forme de croix pour l'enlever
-            Puis je l'ajoute dans la bonne direction
+            Je connaissais déjà ce garde je rajoute sa vision dans la bonne direction
             """
             orientation = self.mat_connue[ligne][colonne]
             for v in range(1, MAX_VISION_GARDE + 1):
-                if orientation == GardeNord and self.check_coord(ligne - v, colonne):
-                    self.sat_regard[ligne - v][colonne] = max(0, self.sat_regard[ligne - v][colonne] + POIDS_GARDE)
-                elif orientation == GardeSud and self.check_coord(ligne + v, colonne):
-                    self.sat_regard[ligne + v][colonne] = max(0, self.sat_regard[ligne + v][colonne] + POIDS_GARDE)
-                elif orientation == GardeEst and self.check_coord(ligne, colonne + v):
-                    self.sat_regard[ligne][colonne + v] = max(0, self.sat_regard[ligne][colonne + v] + POIDS_GARDE)
-                elif orientation == GardeOuest and self.check_coord(ligne, colonne - v):
-                    self.sat_regard[ligne][colonne - v] = max(0, self.sat_regard[ligne][colonne - v] + POIDS_GARDE)
+                if orientation == GardeNord:
+                    new_ligne = ligne - v
+                    new_colonne = colonne
+                elif orientation == GardeSud:
+                    new_ligne = ligne + v
+                    new_colonne = colonne
+                elif orientation == GardeEst:
+                    new_ligne = ligne
+                    new_colonne = colonne + v
+                elif orientation == GardeOuest:
+                    new_ligne = ligne
+                    new_colonne = colonne - v
 
-        for ligne in range(self.max_L):
-            for colonne in range(self.max_C):
-                if self.sat_connue[ligne][colonne] in [SAT_PERSONNE, SAT_PROBA_PERSONNE] or \
-                        (self.sat_connue[ligne][colonne] == SAT_GARDE and (ligne, colonne) not in self.loc_gardes):
+                if self.check_coord(new_ligne, new_colonne):
+                    val = self.sat_regard[new_ligne][new_colonne] + dict_valeur_sat[SAT_GARDE]
+                    self.sat_regard[new_ligne][new_colonne] = min(val, dict_valeur_sat[SAT_GARDE])
+
+        # -------------------------------------------------- Verif -----------------------------------------------------
+        for ligne_index in range(self.max_L):
+            for colonne_index in range(self.max_C):
+                current_type = self.sat_connue[ligne_index][colonne_index]
+                current_loc = (ligne_index, colonne_index)
+
+                if current_type in [SAT_PERSONNE, SAT_PROBA_PERSONNE] or \
+                        (current_type == SAT_GARDE and current_loc not in self.loc_gardes):
                     for direction in dir_deltas:
                         vision_bloquee = False
                         for deltas in direction:
-                            if self.check_coord(ligne + deltas[0], colonne + deltas[1]):
-                                if self.mat_connue[ligne + deltas[0]][colonne + deltas[1]] != unknown and \
-                                        self.mat_connue[ligne + deltas[0]][colonne + deltas[1]] != empty:
+                            new_ligne = ligne_index + deltas[0]
+                            new_colonne = colonne_index + deltas[1]
+                            if self.check_coord(new_ligne, new_colonne):
+                                if self.mat_connue[new_ligne][new_colonne] != unknown and \
+                                        self.mat_connue[new_ligne][new_colonne] != empty:
                                     vision_bloquee = True
 
                                 if vision_bloquee:
-                                    pds = dict_valeur_sat[self.sat_connue[ligne][colonne]]
-                                    new_val = self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] - pds
-                                    self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] = max(0, new_val)
+                                    pds = dict_valeur_sat[current_type]
+                                    new_val = self.sat_regard[new_ligne][new_colonne] - pds
+                                    self.sat_regard[new_ligne][new_colonne] = max(0, new_val)
 
-                elif self.sat_connue[ligne][colonne] == SAT_GARDE and (ligne, colonne) in self.loc_gardes:
-                    orientation = self.mat_connue[ligne][colonne]
+                elif current_type == SAT_GARDE and current_loc in self.loc_gardes:
+                    orientation = self.mat_connue[ligne_index][colonne_index]
                     vision_bloquee = False
                     pds = POIDS_GARDE
                     for v in range(1, MAX_VISION_GARDE + 1):
-                        if orientation == GardeNord and self.check_coord(ligne - v, colonne):
-                            if self.mat_connue[ligne - v][colonne] != unknown and \
-                                    self.mat_connue[ligne - v][colonne] != empty:
+                        if orientation == GardeNord:
+                            new_ligne = ligne_index - v
+                            new_colonne = colonne_index
+                        elif orientation == GardeSud:
+                            new_ligne = ligne_index + v
+                            new_colonne = colonne_index
+                        elif orientation == GardeEst:
+                            new_ligne = ligne_index
+                            new_colonne = colonne_index + v
+                        elif orientation == GardeOuest:
+                            new_ligne = ligne_index
+                            new_colonne = colonne_index - v
+
+                        if self.check_coord(new_ligne, new_colonne):
+                            if self.mat_connue[new_ligne][new_colonne] != unknown and \
+                                    self.mat_connue[new_ligne][new_colonne] != empty:
                                 vision_bloquee = True
 
                             if vision_bloquee:
-                                self.sat_regard[ligne - v][colonne] = max(0, self.sat_regard[ligne - v][colonne] - pds)
-
-                        elif orientation == GardeSud and self.check_coord(ligne + v, colonne):
-                            if self.mat_connue[ligne + v][colonne] != unknown and \
-                                    self.mat_connue[ligne + v][colonne] != empty:
-                                vision_bloquee = True
-
-                            if vision_bloquee:
-                                self.sat_regard[ligne + v][colonne] = max(0, self.sat_regard[ligne + v][colonne] - pds)
-
-                        elif orientation == GardeEst and self.check_coord(ligne, colonne + v):
-                            if self.mat_connue[ligne][colonne + v] != unknown and \
-                                    self.mat_connue[ligne][colonne + v] != empty:
-                                vision_bloquee = True
-
-                            if vision_bloquee:
-                                self.sat_regard[ligne][colonne + v] = max(0, self.sat_regard[ligne][colonne + v] - pds)
-
-                        elif orientation == GardeOuest and self.check_coord(ligne, colonne - v):
-                            if self.mat_connue[ligne][colonne - v] != unknown and \
-                                    self.mat_connue[ligne][colonne - v] != empty:
-                                vision_bloquee = True
-
-                            if vision_bloquee:
-                                self.sat_regard[ligne][colonne - v] = max(0, self.sat_regard[ligne][colonne - v] - pds)
+                                new_val = self.sat_regard[new_ligne][new_colonne] - pds
+                                self.sat_regard[new_ligne][new_colonne] = max(0, new_val)
 
         self.sat_connue[ligne][colonne] = newtype
 
