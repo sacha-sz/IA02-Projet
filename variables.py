@@ -56,6 +56,18 @@ POIDS_NULL = 0
 POIDS_GARDE = 3
 POIDS_PERSONNE = 2
 POIDS_PROBA_PERSONNE = 1
+
+
+dict_valeur_sat = {
+            unknown: POIDS_NULL,
+            SAT_NP: POIDS_NULL,
+            SAT_INVITE: POIDS_NULL,
+            SAT_PROBA_PERSONNE: POIDS_PROBA_PERSONNE,
+            SAT_PERSONNE: POIDS_PERSONNE,
+            SAT_GARDE: POIDS_GARDE
+        }
+
+
 # ------------------------------------------#
 #              UTILITAIRE                   #
 #                HITMAN                     #
