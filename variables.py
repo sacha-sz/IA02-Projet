@@ -51,6 +51,10 @@ SAT_PERSONNE = "P"
 SAT_PROBA_PERSONNE = "P?"
 SAT_NP = " "
 
+POIDS_NULL = 0
+POIDS_GARDE = 3
+POIDS_PERSONNE = 2
+POIDS_PROBA_PERSONNE = 1
 # ------------------------------------------#
 #              UTILITAIRE                   #
 #                HITMAN                     #
