@@ -6,7 +6,6 @@ import heapq
 
 class Agent_Hitman:
     def __init__(self):
-        self.unknown = "?"
         self.oracle = HitmanReferee()
         self.info_actuelle = self.oracle.start_phase1()
 
@@ -17,7 +16,7 @@ class Agent_Hitman:
         # SAT
         self.gophersat = Gophersat(self.max_L, self.max_C)
         self.sat = False
-        self.sat_connue = [[self.unknown] * self.max_C for _ in range(self.max_L)]
+        self.sat_connue = [[unknown] * self.max_C for _ in range(self.max_L)]
         self.sat_regard = [[0] * self.max_C for _ in range(self.max_L)]
 
         # Position de départ
@@ -27,7 +26,7 @@ class Agent_Hitman:
         self.nb_gardes = self.info_actuelle["guard_count"]
         self.nb_invites = self.info_actuelle["civil_count"]
 
-        self.mat_connue = [[self.unknown] * self.max_C for _ in range(self.max_L)]
+        self.mat_connue = [[unknown] * self.max_C for _ in range(self.max_L)]
         self.mat_connue[self.translate_ligne(self._x)][self._y] = empty
         self.sat_connue[self.translate_ligne(self._x)][self._y] = SAT_NP
 
@@ -113,7 +112,7 @@ class Agent_Hitman:
         if nb_ouie < BROUHAHA:
             unknown_pos = []
             for pos in self.generate_neighboors(self.translate_ligne(self._x), self._y):
-                if self.mat_connue[pos[0]][pos[1]] == self.unknown:
+                if self.mat_connue[pos[0]][pos[1]] == unknown:
                     unknown_pos.append((pos[0], pos[1]))
                 elif self.mat_connue[pos[0]][pos[1]] in [GardeEst, GardeOuest, GardeNord, GardeSud,
                                                          InviteEst, InviteOuest, InviteNord, InviteSud]:
@@ -207,7 +206,7 @@ class Agent_Hitman:
         """
         On regarde si la matrice est complète ou non, on recherche le premier élément inconnu
         """
-        return any(self.unknown in row for row in self.mat_connue)
+        return any(unknown in row for row in self.mat_connue)
 
     def gardes_tous_trouves(self) -> bool:
         """
@@ -269,7 +268,7 @@ class Agent_Hitman:
             return
 
         dict_valeur = {
-            self.unknown: POIDS_NULL,
+            unknown: POIDS_NULL,
             SAT_NP: POIDS_NULL,
             SAT_INVITE: POIDS_NULL,
             SAT_PROBA_PERSONNE: POIDS_PROBA_PERSONNE,
@@ -278,7 +277,7 @@ class Agent_Hitman:
         }
 
         if newtype in [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE] and \
-                oldtype in [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE, self.unknown]:
+                oldtype in [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE, unknown]:
             print("Avant : ", oldtype, "->", end=" ")
             print("Newtype : ", newtype, " en : ", ligne, colonne, end=" ")
             print("Différence : ", dict_valeur[newtype] - dict_valeur[oldtype])
@@ -293,7 +292,7 @@ class Agent_Hitman:
                     bloque = False
                     for deltas in direction:
                         if self.check_coord(ligne + deltas[0], colonne + deltas[1]) and not bloque:
-                            if self.mat_connue[ligne + deltas[0]][colonne + deltas[1]] != self.unknown and \
+                            if self.mat_connue[ligne + deltas[0]][colonne + deltas[1]] != unknown and \
                                     self.mat_connue[ligne + deltas[0]][colonne + deltas[1]] != empty:
                                 bloque = True
 
@@ -321,7 +320,7 @@ class Agent_Hitman:
                         for deltas in direction:
                             if self.check_coord(i + deltas[0], j + deltas[1]):
                                 if not vision_bloque and \
-                                        self.mat_connue[i + deltas[0]][j + deltas[1]] != self.unknown and \
+                                        self.mat_connue[i + deltas[0]][j + deltas[1]] != unknown and \
                                         self.mat_connue[i + deltas[0]][j + deltas[1]] != empty:
                                     vision_bloque = True
 
@@ -338,7 +337,7 @@ class Agent_Hitman:
                         if type == GardeNord:
                             if self.check_coord(i - v, j) and \
                                     self.mat_connue[i - v][j] != empty and \
-                                    self.mat_connue[i - v][j] != self.unknown:
+                                    self.mat_connue[i - v][j] != unknown:
                                 vision_bloque = True
 
                             if vision_bloque and self.check_coord(i - v, j):
@@ -347,7 +346,7 @@ class Agent_Hitman:
                         elif type == GardeSud:
                             if self.check_coord(i + v, j) and \
                                     self.mat_connue[i + v][j] != empty and \
-                                    self.mat_connue[i + v][j] != self.unknown:
+                                    self.mat_connue[i + v][j] != unknown:
                                 vision_bloque = True
 
                             if vision_bloque and self.check_coord(i + v, j):
@@ -356,7 +355,7 @@ class Agent_Hitman:
                         elif type == GardeEst:
                             if self.check_coord(i, j + v) and \
                                     self.mat_connue[i][j + v] != empty and \
-                                    self.mat_connue[i][j + v] != self.unknown:
+                                    self.mat_connue[i][j + v] != unknown:
                                 vision_bloque = True
 
                             if vision_bloque and self.check_coord(i, j + v):
@@ -365,7 +364,7 @@ class Agent_Hitman:
                         elif type == GardeOuest:
                             if self.check_coord(i, j - v) and \
                                     self.mat_connue[i][j - v] != empty and \
-                                    self.mat_connue[i][j - v] != self.unknown:
+                                    self.mat_connue[i][j - v] != unknown:
                                 vision_bloque = True
 
                             if vision_bloque and self.check_coord(i, j - v):
@@ -377,7 +376,7 @@ class Agent_Hitman:
                         for deltas in direction:
                             if self.check_coord(i + deltas[0], j + deltas[1]):
                                 if not vision_bloque and \
-                                        self.mat_connue[i + deltas[0]][j + deltas[1]] != self.unknown and \
+                                        self.mat_connue[i + deltas[0]][j + deltas[1]] != unknown and \
                                         self.mat_connue[i + deltas[0]][j + deltas[1]] != empty:
                                     vision_bloque = True
 
@@ -391,7 +390,7 @@ class Agent_Hitman:
                         for deltas in direction:
                             if self.check_coord(i + deltas[0], j + deltas[1]):
                                 if not vision_bloque and \
-                                        self.mat_connue[i + deltas[0]][j + deltas[1]] != self.unknown and \
+                                        self.mat_connue[i + deltas[0]][j + deltas[1]] != unknown and \
                                         self.mat_connue[i + deltas[0]][j + deltas[1]] != empty:
                                     vision_bloque = True
 
@@ -473,7 +472,7 @@ class Agent_Hitman:
             x, y, distance = file_attente.popleft()
 
             # Vérifier si la case actuelle est inconnue
-            if self.mat_connue[x][y] == self.unknown:
+            if self.mat_connue[x][y] == unknown:
                 nearest_unknown.append((x, y, distance))
                 continue
 
@@ -490,7 +489,7 @@ class Agent_Hitman:
 
         # On retourne tous les unkown ayant la même distance
         nearest_distance = sorted_unknown[0][2]
-        nearest_unknown = [unknown for unknown in sorted_unknown if unknown[2] == nearest_distance]
+        nearest_unknown = [unknown for unk in sorted_unknown if unk[2] == nearest_distance]
 
         return nearest_unknown
 
@@ -613,7 +612,7 @@ class Agent_Hitman:
                 self.sat_utilisation()
 
             for ngb in self.get_neighbours((self.translate_ligne(self._x), self._y)):
-                if self.mat_connue[ngb[0]][ngb[1]] == self.unknown:
+                if self.mat_connue[ngb[0]][ngb[1]] == unknown:
                     self.best_turn(ngb[0], ngb[1])
 
             if len(queue_action) == 0:
@@ -630,7 +629,7 @@ class Agent_Hitman:
                     queue_action.append(coord)
 
             else:
-                if self.mat_connue[actual_target[0]][actual_target[1]] != self.unknown:
+                if self.mat_connue[actual_target[0]][actual_target[1]] != unknown:
                     queue_action.clear()
                 else:
                     next_action = queue_action.popleft()
@@ -754,7 +753,7 @@ class Agent_Hitman:
                     vision_bloque = False
                     for v in range(1, MAX_VISION_INVITE + 1):
                         if self.mat_connue[i][j] == InviteSud and i + v < self.max_L:
-                            if self.mat_connue[i + v][j] != empty and self.mat_connue[i + v][j] != self.unknown:
+                            if self.mat_connue[i + v][j] != empty and self.mat_connue[i + v][j] != unknown:
                                 vision_bloque = True
 
                             if vision_bloque:
@@ -762,7 +761,7 @@ class Agent_Hitman:
 
                         elif self.mat_connue[i][j] == InviteNord and i - v >= 0:
 
-                            if self.mat_connue[i - v][j] != empty and self.mat_connue[i - v][j] != self.unknown:
+                            if self.mat_connue[i - v][j] != empty and self.mat_connue[i - v][j] != unknown:
                                 vision_bloque = True
 
                             if vision_bloque:
@@ -770,14 +769,14 @@ class Agent_Hitman:
 
                         elif self.mat_connue[i][j] == InviteEst and j + v < self.max_C:
 
-                            if self.mat_connue[i][j + v] != empty and self.mat_connue[i][j + v] != self.unknown:
+                            if self.mat_connue[i][j + v] != empty and self.mat_connue[i][j + v] != unknown:
                                 vision_bloque = True
 
                             if vision_bloque:
                                 self.mat_regard_invite[i][j + v] = max(0, self.mat_regard_invite[i][j + v] - 1)
 
                         elif self.mat_connue[i][j] == InviteOuest and j - v >= 0:
-                            if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != self.unknown:
+                            if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != unknown:
                                 vision_bloque = True
 
                             if vision_bloque:
@@ -820,7 +819,7 @@ class Agent_Hitman:
                     vision_bloque = False
                     for v in range(1, MAX_VISION_GARDE + 1):
                         if self.mat_connue[i][j] == GardeSud and i + v < self.max_L:
-                            if self.mat_connue[i + v][j] != empty and self.mat_connue[i + v][j] != self.unknown:
+                            if self.mat_connue[i + v][j] != empty and self.mat_connue[i + v][j] != unknown:
                                 vision_bloque = True
 
                             if vision_bloque:
@@ -833,7 +832,7 @@ class Agent_Hitman:
 
                         elif self.mat_connue[i][j] == GardeNord and i - v >= 0:
 
-                            if self.mat_connue[i - v][j] != empty and self.mat_connue[i - v][j] != self.unknown:
+                            if self.mat_connue[i - v][j] != empty and self.mat_connue[i - v][j] != unknown:
                                 vision_bloque = True
 
                             if vision_bloque:
@@ -843,7 +842,7 @@ class Agent_Hitman:
 
                         elif self.mat_connue[i][j] == GardeEst and j + v < self.max_C:
 
-                            if self.mat_connue[i][j + v] != empty and self.mat_connue[i][j + v] != self.unknown:
+                            if self.mat_connue[i][j + v] != empty and self.mat_connue[i][j + v] != unknown:
                                 vision_bloque = True
 
                             if vision_bloque:
@@ -852,7 +851,7 @@ class Agent_Hitman:
                                 self.mat_regard[i][j + v] = max(0, self.mat_regard[i][j + v] - 5)
 
                         elif self.mat_connue[i][j] == GardeOuest and j - v >= 0:
-                            if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != self.unknown:
+                            if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != unknown:
                                 vision_bloque = True
 
                             if vision_bloque:
@@ -1103,28 +1102,28 @@ class Agent_Hitman:
 
             for v in range(1, MAX_VISION_GARDE + 1):
                 if self.mat_connue[i][j] == GardeSud and i + v < self.max_L:
-                    if self.mat_connue[i + v][j] != empty and self.mat_connue[i + v][j] != self.unknown:
+                    if self.mat_connue[i + v][j] != empty and self.mat_connue[i + v][j] != unknown:
                         vision_bloque = True
 
                     if (self.translate_ligne(self._x), self._y) == (i + v, j) and not vision_bloque:
                         return True
 
                 if self.mat_connue[i][j] == GardeNord and i - v >= 0:
-                    if self.mat_connue[i - v][j] != empty and self.mat_connue[i - v][j] != self.unknown:
+                    if self.mat_connue[i - v][j] != empty and self.mat_connue[i - v][j] != unknown:
                         vision_bloque = True
 
                     if (self.translate_ligne(self._x), self._y) == (i - v, j) and not vision_bloque:
                         return True
 
                 if self.mat_connue[i][j] == GardeEst and j + v < self.max_C:
-                    if self.mat_connue[i][j + v] != empty and self.mat_connue[i][j + v] != self.unknown:
+                    if self.mat_connue[i][j + v] != empty and self.mat_connue[i][j + v] != unknown:
                         vision_bloque = True
 
                     if (self.translate_ligne(self._x), self._y) == (i, j + v) and not vision_bloque:
                         return True
 
                 if self.mat_connue[i][j] == GardeOuest and j - v >= 0:
-                    if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != self.unknown:
+                    if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != unknown:
                         vision_bloque = True
 
                     if (self.translate_ligne(self._x), self._y) == (i, j - v) and not vision_bloque:

@@ -30,6 +30,7 @@ empty = " "  # "E"
 wall = "\u2588" + "\u2588" + "\u2588" + "\u2588"  # "W"
 Costume = "C"
 Corde = "R"
+unknown = "?"
 
 Target = "T"
 DEAD = "X"
