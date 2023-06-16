@@ -269,8 +269,9 @@ class Agent_Hitman:
         if not self.sat or newtype == oldtype or not self.check_coord(ligne, colonne):
             return
 
-        if newtype not in [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE] or \
-                oldtype not in [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE, unknown]:
+        if newtype not in [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE, SAT_INVITE] or \
+                oldtype not in [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE, unknown, SAT_INVITE] or \
+            dict_valeur_sat[newtype] - dict_valeur_sat[oldtype] == 0:
             return
 
         print("Début add_vision_sat +++++++++++++++++++++++++++++++++++++++++++++++++++++++")
@@ -278,9 +279,6 @@ class Agent_Hitman:
         print("Avant : ", oldtype, "->", end=" ")
         print("Newtype : ", newtype, " en : ", ligne, colonne, end=" ")
         print("Différence : ", dict_valeur_sat[newtype] - dict_valeur_sat[oldtype])
-
-        if dict_valeur_sat[newtype] - dict_valeur_sat[oldtype] == 0:
-            return
 
         dir_deltas = [[(0, 1), (0, 2)],
                       [(0, -1), (0, -2)],
@@ -307,7 +305,7 @@ class Agent_Hitman:
 
         oldtype = self.sat_connue[ligne][colonne]
 
-        if not oldtype in [SAT_PROBA_PERSONNE, SAT_PERSONNE, unknown]:
+        if oldtype not in [SAT_PROBA_PERSONNE, SAT_PERSONNE, unknown, SAT_GARDE, SAT_INVITE]:
             return
 
         print("Début ajout info sat ***********************************************************")
@@ -317,17 +315,13 @@ class Agent_Hitman:
                       [(1, 0), (2, 0)],
                       [(-1, 0), (-2, 0)]]
 
-        if oldtype != newtype:
-            self.sat_connue[ligne][colonne] = newtype
-
-            for direction in dir_deltas:
-                for deltas in direction:
-                    if self.check_coord(ligne + deltas[0], colonne + deltas[1]):
-                        diff = dict_valeur_sat[newtype] - dict_valeur_sat[oldtype]
-                        new_val = self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] + diff
-                        self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] = max(0, new_val)
-                        print("New val : ", self.sat_regard[ligne + deltas[0]][colonne + deltas[1]], " en : ",
-                              ligne + deltas[0], colonne + deltas[1])
+        for direction in dir_deltas:
+            for deltas in direction:
+                if self.check_coord(ligne + deltas[0], colonne + deltas[1]):
+                    new_val = self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] - dict_valeur_sat[oldtype]
+                    self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] = max(0, new_val)
+                    print("New val : ", self.sat_regard[ligne + deltas[0]][colonne + deltas[1]], " en : ",
+                          ligne + deltas[0], colonne + deltas[1])
 
         if newtype == SAT_GARDE:
             """
@@ -336,15 +330,6 @@ class Agent_Hitman:
             Puis je l'ajoute dans la bonne direction
             """
             orientation = self.mat_connue[ligne][colonne]
-
-            if oldtype == newtype:
-                for direction in dir_deltas:
-                    for deltas in direction:
-                        if self.check_coord(ligne + deltas[0], colonne + deltas[1]):
-                            new_val = self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] - POIDS_GARDE
-                            self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] = max(0, new_val)
-                            print("New val : ", self.sat_regard[ligne + deltas[0]][colonne + deltas[1]], " en : ",
-                                  ligne + deltas[0], colonne + deltas[1])
 
             for v in range(1, MAX_VISION_GARDE + 1):
                 if orientation == GardeNord and self.check_coord(ligne - v, colonne):
@@ -359,6 +344,8 @@ class Agent_Hitman:
                 elif orientation == GardeOuest and self.check_coord(ligne, colonne - v):
                     self.sat_regard[ligne][colonne - v] = max(0, self.sat_regard[ligne][colonne - v] + POIDS_GARDE)
                     print("New val : ", self.sat_regard[ligne][colonne - v], " en : ", ligne, colonne - v)
+
+        self.sat_connue[ligne][colonne] = newtype
 
         print("Fin ajout info sat ***********************************************************")
 
@@ -414,7 +401,6 @@ class Agent_Hitman:
                         if res_i == 1:
                             self.sat_connue[i][j] = SAT_INVITE
                             self.add_vision_sat(i, j, SAT_INVITE, SAT_PERSONNE)
-
 
     """
     --------------------------------------------------------------------------------------------------------------------
