@@ -410,31 +410,31 @@ class Agent_Hitman:
                         res_p = self.gophersat.test_type((i, j, "G"))
                         if res_p == 1:
                             self.sat_connue[i][j] = SAT_GARDE
-                            self.ajout_info_sat(i, j, SAT_GARDE)
+                            self.add_vision_sat(i, j, SAT_GARDE, avant)
                         else:
                             res_p = self.gophersat.test_type((i, j, "I"))
                             if res_p == 1:
                                 self.sat_connue[i][j] = SAT_INVITE
-                                self.ajout_info_sat(i, j, SAT_INVITE)
+                                self.add_vision_sat(i, j, SAT_INVITE, avant)
                             else:
                                 self.sat_connue[i][j] = SAT_PERSONNE
-                                self.ajout_info_sat(i, j, SAT_PERSONNE)
+                                self.add_vision_sat(i, j, SAT_PERSONNE, avant)
                     elif res == 0:
                         self.sat_connue[i][j] = SAT_PROBA_PERSONNE
-                        self.ajout_info_sat(i, j, SAT_PROBA_PERSONNE)
+                        self.add_vision_sat(i, j, SAT_PROBA_PERSONNE, avant)
                     else:
                         self.sat_connue[i][j] = SAT_NP
-                        self.ajout_info_sat(i, j, SAT_NP)
+                        self.add_vision_sat(i, j, SAT_NP, avant)
                 elif avant == SAT_PERSONNE:
                     res_g = self.gophersat.test_type((i, j, "G"))
                     if res_g == 1:
                         self.sat_connue[i][j] = SAT_GARDE
-                        self.ajout_info_sat(i, j, SAT_GARDE)
+                        self.add_vision_sat(i, j, SAT_GARDE, avant)
                     elif res_g == 0:
                         res_i = self.gophersat.test_type((i, j, "I"))
                         if res_i == 1:
                             self.sat_connue[i][j] = SAT_INVITE
-                            self.ajout_info_sat(i, j, SAT_INVITE)
+                            self.add_vision_sat(i, j, SAT_INVITE, avant)
 
     """
     --------------------------------------------------------------------------------------------------------------------
