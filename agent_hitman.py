@@ -271,14 +271,8 @@ class Agent_Hitman:
 
         if newtype not in [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE, SAT_INVITE] or \
                 oldtype not in [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE, unknown, SAT_INVITE] or \
-            dict_valeur_sat[newtype] - dict_valeur_sat[oldtype] == 0:
+                dict_valeur_sat[newtype] - dict_valeur_sat[oldtype] == 0:
             return
-
-        print("Début add_vision_sat +++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-
-        print("Avant : ", oldtype, "->", end=" ")
-        print("Newtype : ", newtype, " en : ", ligne, colonne, end=" ")
-        print("Différence : ", dict_valeur_sat[newtype] - dict_valeur_sat[oldtype])
 
         dir_deltas = [[(0, 1), (0, 2)],
                       [(0, -1), (0, -2)],
@@ -291,14 +285,11 @@ class Agent_Hitman:
                     diff = dict_valeur_sat[newtype] - dict_valeur_sat[oldtype]
                     new_val = self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] + diff
                     self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] = max(0, new_val)
-                    print("New val : ", self.sat_regard[ligne + deltas[0]][colonne + deltas[1]], " en : ",
-                          ligne + deltas[0], colonne + deltas[1])
-
-        print("Fin add_vision_sat +++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
     def ajout_info_sat(self, ligne: int, colonne: int, newtype: str) -> None:
         """
         On ajoute une information dans la matrice connue de sat et on met à jour les poids en forme de croix
+        Nous ne passons pas deux fois sur la même case
         """
         if not self.sat or not self.check_coord(ligne, colonne) or newtype not in [SAT_GARDE, SAT_INVITE, SAT_NP]:
             return
@@ -307,8 +298,6 @@ class Agent_Hitman:
 
         if oldtype not in [SAT_PROBA_PERSONNE, SAT_PERSONNE, unknown, SAT_GARDE, SAT_INVITE]:
             return
-
-        print("Début ajout info sat ***********************************************************")
 
         dir_deltas = [[(0, 1), (0, 2)],
                       [(0, -1), (0, -2)],
@@ -320,8 +309,6 @@ class Agent_Hitman:
                 if self.check_coord(ligne + deltas[0], colonne + deltas[1]):
                     new_val = self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] - dict_valeur_sat[oldtype]
                     self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] = max(0, new_val)
-                    print("New val : ", self.sat_regard[ligne + deltas[0]][colonne + deltas[1]], " en : ",
-                          ligne + deltas[0], colonne + deltas[1])
 
         if newtype == SAT_GARDE:
             """
@@ -330,24 +317,71 @@ class Agent_Hitman:
             Puis je l'ajoute dans la bonne direction
             """
             orientation = self.mat_connue[ligne][colonne]
-
             for v in range(1, MAX_VISION_GARDE + 1):
                 if orientation == GardeNord and self.check_coord(ligne - v, colonne):
                     self.sat_regard[ligne - v][colonne] = max(0, self.sat_regard[ligne - v][colonne] + POIDS_GARDE)
-                    print("New val : ", self.sat_regard[ligne - v][colonne], " en : ", ligne - v, colonne)
                 elif orientation == GardeSud and self.check_coord(ligne + v, colonne):
                     self.sat_regard[ligne + v][colonne] = max(0, self.sat_regard[ligne + v][colonne] + POIDS_GARDE)
-                    print("New val : ", self.sat_regard[ligne + v][colonne], " en : ", ligne + v, colonne)
                 elif orientation == GardeEst and self.check_coord(ligne, colonne + v):
                     self.sat_regard[ligne][colonne + v] = max(0, self.sat_regard[ligne][colonne + v] + POIDS_GARDE)
-                    print("New val : ", self.sat_regard[ligne][colonne + v], " en : ", ligne, colonne + v)
                 elif orientation == GardeOuest and self.check_coord(ligne, colonne - v):
                     self.sat_regard[ligne][colonne - v] = max(0, self.sat_regard[ligne][colonne - v] + POIDS_GARDE)
-                    print("New val : ", self.sat_regard[ligne][colonne - v], " en : ", ligne, colonne - v)
+
+        for ligne in range(self.max_L):
+            for colonne in range(self.max_C):
+                if self.sat_connue[ligne][colonne] in [SAT_PERSONNE, SAT_PROBA_PERSONNE] or \
+                        (self.sat_connue[ligne][colonne] == SAT_GARDE and (ligne, colonne) not in self.loc_gardes):
+                    for direction in dir_deltas:
+                        vision_bloquee = False
+                        for deltas in direction:
+                            if self.check_coord(ligne + deltas[0], colonne + deltas[1]):
+                                if self.mat_connue[ligne + deltas[0]][colonne + deltas[1]] != unknown and \
+                                        self.mat_connue[ligne + deltas[0]][colonne + deltas[1]] != empty:
+                                    vision_bloquee = True
+
+                                if vision_bloquee:
+                                    pds = dict_valeur_sat[self.sat_connue[ligne][colonne]]
+                                    new_val = self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] - pds
+                                    self.sat_regard[ligne + deltas[0]][colonne + deltas[1]] = max(0, new_val)
+
+                elif self.sat_connue[ligne][colonne] == SAT_GARDE and (ligne, colonne) in self.loc_gardes:
+                    orientation = self.mat_connue[ligne][colonne]
+                    vision_bloquee = False
+                    pds = POIDS_GARDE
+                    for v in range(1, MAX_VISION_GARDE + 1):
+                        if orientation == GardeNord and self.check_coord(ligne - v, colonne):
+                            if self.mat_connue[ligne - v][colonne] != unknown and \
+                                    self.mat_connue[ligne - v][colonne] != empty:
+                                vision_bloquee = True
+
+                            if vision_bloquee:
+                                self.sat_regard[ligne - v][colonne] = max(0, self.sat_regard[ligne - v][colonne] - pds)
+
+                        elif orientation == GardeSud and self.check_coord(ligne + v, colonne):
+                            if self.mat_connue[ligne + v][colonne] != unknown and \
+                                    self.mat_connue[ligne + v][colonne] != empty:
+                                vision_bloquee = True
+
+                            if vision_bloquee:
+                                self.sat_regard[ligne + v][colonne] = max(0, self.sat_regard[ligne + v][colonne] - pds)
+
+                        elif orientation == GardeEst and self.check_coord(ligne, colonne + v):
+                            if self.mat_connue[ligne][colonne + v] != unknown and \
+                                    self.mat_connue[ligne][colonne + v] != empty:
+                                vision_bloquee = True
+
+                            if vision_bloquee:
+                                self.sat_regard[ligne][colonne + v] = max(0, self.sat_regard[ligne][colonne + v] - pds)
+
+                        elif orientation == GardeOuest and self.check_coord(ligne, colonne - v):
+                            if self.mat_connue[ligne][colonne - v] != unknown and \
+                                    self.mat_connue[ligne][colonne - v] != empty:
+                                vision_bloquee = True
+
+                            if vision_bloquee:
+                                self.sat_regard[ligne][colonne - v] = max(0, self.sat_regard[ligne][colonne - v] - pds)
 
         self.sat_connue[ligne][colonne] = newtype
-
-        print("Fin ajout info sat ***********************************************************")
 
     def sat_utilisation(self) -> None:
         """
@@ -376,31 +410,31 @@ class Agent_Hitman:
                         res_p = self.gophersat.test_type((i, j, "G"))
                         if res_p == 1:
                             self.sat_connue[i][j] = SAT_GARDE
-                            self.add_vision_sat(i, j, SAT_GARDE, avant)
+                            self.ajout_info_sat(i, j, SAT_GARDE)
                         else:
                             res_p = self.gophersat.test_type((i, j, "I"))
                             if res_p == 1:
                                 self.sat_connue[i][j] = SAT_INVITE
-                                self.add_vision_sat(i, j, SAT_INVITE, avant)
+                                self.ajout_info_sat(i, j, SAT_INVITE)
                             else:
                                 self.sat_connue[i][j] = SAT_PERSONNE
-                                self.add_vision_sat(i, j, SAT_PERSONNE, avant)
+                                self.ajout_info_sat(i, j, SAT_PERSONNE)
                     elif res == 0:
                         self.sat_connue[i][j] = SAT_PROBA_PERSONNE
-                        self.add_vision_sat(i, j, SAT_PROBA_PERSONNE, avant)
+                        self.ajout_info_sat(i, j, SAT_PROBA_PERSONNE)
                     else:
                         self.sat_connue[i][j] = SAT_NP
-                        self.add_vision_sat(i, j, SAT_NP, avant)
+                        self.ajout_info_sat(i, j, SAT_NP)
                 elif avant == SAT_PERSONNE:
                     res_g = self.gophersat.test_type((i, j, "G"))
                     if res_g == 1:
                         self.sat_connue[i][j] = SAT_GARDE
-                        self.add_vision_sat(i, j, SAT_GARDE, SAT_PERSONNE)
+                        self.ajout_info_sat(i, j, SAT_GARDE)
                     elif res_g == 0:
                         res_i = self.gophersat.test_type((i, j, "I"))
                         if res_i == 1:
                             self.sat_connue[i][j] = SAT_INVITE
-                            self.add_vision_sat(i, j, SAT_INVITE, SAT_PERSONNE)
+                            self.ajout_info_sat(i, j, SAT_INVITE)
 
     """
     --------------------------------------------------------------------------------------------------------------------
