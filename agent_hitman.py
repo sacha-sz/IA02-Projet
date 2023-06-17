@@ -132,7 +132,7 @@ class Agent_Hitman:
 
         certitudes = []
         for v in vision:
-            pos_vision_x = v[0][1]
+            pos_vision_x = self.translate_ligne(v[0][1])
             pos_vision_y = v[0][0]
             obj_vision = v[1]
 
@@ -188,8 +188,7 @@ class Agent_Hitman:
                     self.ajout_info_mat(pos_vision_x, pos_vision_y, Target)
 
         if self.sat:
-            new_certitudes = [(self.translate_ligne(x[0]), x[1], x[2]) for x in certitudes]
-            self.gophersat.ajout_clauses_voir(new_certitudes)
+            self.gophersat.ajout_clauses_voir(certitudes)
 
     def generate_neighboors(self, indice_ligne: int, indice_colonne: int) -> LC:
         """
@@ -341,10 +340,16 @@ class Agent_Hitman:
                     self.sat_regard[new_ligne][new_colonne] = min(val, dict_valeur_sat[SAT_GARDE])
 
         # -------------------------------------------------- Verif -----------------------------------------------------
+        self.sat_connue[ligne][colonne] = newtype
+
         for ligne_index in range(self.max_L):
             for colonne_index in range(self.max_C):
                 current_type = self.sat_connue[ligne_index][colonne_index]
                 current_loc = (ligne_index, colonne_index)
+
+                if current_type == SAT_GARDE:
+                    print("G en ", current_loc)
+                    print("Loc gardes : ", self.loc_gardes)
 
                 if current_type in [SAT_PERSONNE, SAT_PROBA_PERSONNE] or \
                         (current_type == SAT_GARDE and current_loc not in self.loc_gardes):
@@ -390,7 +395,6 @@ class Agent_Hitman:
                                 new_val = self.sat_regard[new_ligne][new_colonne] - pds
                                 self.sat_regard[new_ligne][new_colonne] = max(0, new_val)
 
-        self.sat_connue[ligne][colonne] = newtype
 
     def sat_utilisation(self) -> None:
         """
@@ -608,9 +612,6 @@ class Agent_Hitman:
         actual_target = None
 
         while self.incomplete_mat():
-            if self.sat:
-                self.sat_utilisation()
-
             for ngb in self.get_neighbours((self.translate_ligne(self._x), self._y)):
                 if self.mat_connue[ngb[0]][ngb[1]] == unknown:
                     self.best_turn(ngb[0], ngb[1])
@@ -703,7 +704,6 @@ class Agent_Hitman:
         Ajoute une information dans la matrice de connaissance et convertit la ligne
         """
 
-        ligne = self.translate_ligne(ligne)
         if self.check_coord(ligne, colonne) and self.mat_connue[ligne][colonne] == unknown:
             self.mat_connue[ligne][colonne] = info
 
