@@ -50,12 +50,11 @@ class Agent_Hitman:
         output = [border]
 
         for i in range(self.max_L):
-            # row_str = f'{str(self.translate_ligne(i)).rjust(len(str(self.max_L)))} |'
-            row_str = f'|'
+            row_str = f'{str(self.translate_ligne(i)).rjust(len(str(self.max_L)))} |'
             for j in range(self.max_C):
-                # element = self.mat_connue[i][j]
-                element = "[" + self.sat_connue[i][j] + "]"
-                element += " (" + str(self.sat_regard[i][j]) + ")"
+                element = self.mat_connue[i][j]
+                element += "-- [" + self.sat_connue[i][j] + "]" if self.sat_connue[i][j] != SAT_NP and self.sat else ""
+                # element += " (" + str(self.sat_regard[i][j]) + ")"
                 if self.translate_ligne(self._x) == i and self._y == j:
                     element += " H"
                     orientation_dict = {
@@ -70,11 +69,11 @@ class Agent_Hitman:
             output.append(row_str)
             output.append(border)
 
-        # ligne_col = ' ' * (len(str(self.max_L)) + 1) + '|'
-        # for i in range(self.max_C):
-        #     ligne_col += f' {str(i).center(max_length)} |'
-        # output.append(ligne_col)
-        # output.append("\n")
+        ligne_col = ' ' * (len(str(self.max_L)) + 1) + '|'
+        for i in range(self.max_C):
+            ligne_col += f' {str(i).center(max_length)} |'
+        output.append(ligne_col)
+        output.append("\n")
 
         return '\n'.join(output)
 
