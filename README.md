@@ -21,9 +21,39 @@ Des rotations peuvent donc être nécessaire. Une methode, ```best_turn```, perm
 en faisant le moins de rotations possibles.
 
 #### Modélisation SAT
+Nous avons choisi de modéliser le problème de la manière suivante. 
+Une case est représentée par trois variables propositionnelles :
+* ```P``` : la case est une personne
+* ```I``` : la case est un invité (civil)
+* ```G``` : la case est un garde
+
+Nous avons donc la contrainte suivante : 
+* ```P ⇔ G ∨ I```  ⇔ ```(¬P ∨ G ∨ I) ∧ (P ∨ ¬G) ∧ (P ∨ ¬I)```
+
+
+Le fait de **voir** nous ajoute les certitudes suivantes :
+- Si on voit un garde alors on sait que la case est un garde
+- De même pour un civil
+- Si on voit tout autre chose alors on sait que la case n'est pas une personne
+
+Le fait d'**entendre** nous ajoute les certitudes suivantes :
+- une valeur fixe d'un nombre de personnes qui sont dans le champ d'écoute,
+si ce nombre est compris entre 1 et BROUHAHA.
+- une valeur minimum (BROUHAHA) de personnes qui sont dans le champ d'écoute,
+si ce nombre est compris entre BROUHAHA et nombre maximum de personnes dans le champ d'écoute.
+- la négation des personnes de la zone d'écoute si le nombre de personnes dans le champ d'écoute est 0.
+
 
 #### Utilisation de cette modélisation
+Pour utiliser cette modélisation nous avons d'abord besoin d'ajouter les certitudes que nous avons sur la map (entendre, voir).
+Ensuite nous utilisons gophersat pour résoudre le problème. 
 
+Mais quel est ce problème ?
+Ce problème est de prédire la valeur d'une case non découverte. 
+Pour cela nous avons les fonctions ```test_personne``` et ```test_type```.
+
+Vous pouvez modifier la valeur de POIDS_PROBA_PERSONNE dans le fichier ```variables.py```.
+Cette modification rendra Hitman plus ou moins frileux à l'idée de parcourir une case inconnue.
 
 ### Phase 2 :
 L'agent doit se déplacer dans la map pour tuer la cible.
