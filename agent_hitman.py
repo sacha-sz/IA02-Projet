@@ -817,6 +817,9 @@ class Agent_Hitman:
         Si un garde a un objet/mur/personne devant lui, son champ
         de vision doit être réduit.
         """
+        #Réinitialiser mat regard 
+        self.mat_regard = [[0] * self.max_C for _ in range(self.max_L)]
+
         for i in range(self.max_L):
             for j in range(self.max_C):
                 if self.mat_connue[i][j].startswith("G"):
@@ -833,6 +836,9 @@ class Agent_Hitman:
                                     continue
                                 self.mat_regard[i + v][j] = max(0, self.mat_regard[i + v][j] - 5)
 
+                            else:
+                                self.mat_regard[i + v][j] += 5
+
 
                         elif self.mat_connue[i][j] == GardeNord and i - v >= 0:
 
@@ -844,6 +850,9 @@ class Agent_Hitman:
                                     continue
                                 self.mat_regard[i - v][j] = max(0, self.mat_regard[i - v][j] - 5)
 
+                            else:
+                                self.mat_regard[i - v][j] += 5
+
                         elif self.mat_connue[i][j] == GardeEst and j + v < self.max_C:
 
                             if self.mat_connue[i][j + v] != empty and self.mat_connue[i][j + v] != unknown:
@@ -854,6 +863,9 @@ class Agent_Hitman:
                                     continue
                                 self.mat_regard[i][j + v] = max(0, self.mat_regard[i][j + v] - 5)
 
+                            else:
+                                self.mat_regard[i][j + v] += 5
+
                         elif self.mat_connue[i][j] == GardeOuest and j - v >= 0:
                             if self.mat_connue[i][j - v] != empty and self.mat_connue[i][j - v] != unknown:
                                 vision_bloque = True
@@ -862,6 +874,9 @@ class Agent_Hitman:
                                 if self.mat_connue[i][j - v] == Target:
                                     continue
                                 self.mat_regard[i][j - v] = max(0, self.mat_regard[i][j - v] - 5)
+
+                            else:
+                                self.mat_regard[i][j - v] += 5
 
     """
     --------------------------------------------------------------------------------------------------------------------
