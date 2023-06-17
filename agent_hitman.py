@@ -44,7 +44,7 @@ class Agent_Hitman:
         """
         Affichage de la matrice des connaissances de l'agent
         """
-        max_length = 4
+        max_length = 8
         border = '-' * (len(str(self.max_L)) + 1)
         border += '+' + '-' * ((max_length + 2) * self.max_C + self.max_L) + '+'
         output = [border]
@@ -54,8 +54,8 @@ class Agent_Hitman:
             row_str = f'|'
             for j in range(self.max_C):
                 # element = self.mat_connue[i][j]
-                # element = self.sat_connue[i][j]
-                element = str(self.sat_regard[i][j])
+                element = "[" + self.sat_connue[i][j] + "]"
+                element += " (" + str(self.sat_regard[i][j]) + ")"
                 if self.translate_ligne(self._x) == i and self._y == j:
                     element += " H"
                     orientation_dict = {
@@ -316,6 +316,9 @@ class Agent_Hitman:
                     new_val = self.sat_regard[new_ligne][new_colonne] - dict_valeur_sat[oldtype]
                     self.sat_regard[new_ligne][new_colonne] = max(0, new_val)
 
+        self.sat_connue[ligne][colonne] = newtype
+
+    def correct_sat(self) -> None:
         if newtype == SAT_GARDE:
             """
             Je connaissais déjà ce garde je rajoute sa vision dans la bonne direction
@@ -336,11 +339,9 @@ class Agent_Hitman:
                     new_colonne = colonne - v
 
                 if self.check_coord(new_ligne, new_colonne):
-                    val = self.sat_regard[new_ligne][new_colonne] + dict_valeur_sat[SAT_GARDE]
-                    self.sat_regard[new_ligne][new_colonne] = min(val, dict_valeur_sat[SAT_GARDE])
+                    self.sat_regard[new_ligne][new_colonne] += dict_valeur_sat[SAT_GARDE]
 
         # -------------------------------------------------- Verif -----------------------------------------------------
-        self.sat_connue[ligne][colonne] = newtype
 
         for ligne_index in range(self.max_L):
             for colonne_index in range(self.max_C):
@@ -1324,7 +1325,7 @@ class Agent_Hitman:
                             if self.mat_connue[ngb[0]][ngb[1]] == InviteEst or self.mat_connue[ngb[0]][
                                 ngb[1]] == InviteNord or self.mat_connue[ngb[0]][ngb[1]] == InviteOuest or \
                                     self.mat_connue[ngb[0]][ngb[1]] == InviteSud:
-                                self.info_actuelle = self.oracle.neutralize_invite()
+                                self.info_actuelle = self.oracle.neutralize_civil()
                                 # print("penalites : ", self.info_actuelle["penalties"])
 
                             self.mat_connue[ngb[0]][ngb[1]] = empty
