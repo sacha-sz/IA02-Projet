@@ -273,7 +273,7 @@ class Agent_Hitman:
         allowed_types = [SAT_NP, SAT_PROBA_PERSONNE, SAT_PERSONNE, SAT_GARDE, unknown, SAT_INVITE]
 
         if newtype not in allowed_types or oldtype not in allowed_types or \
-            dict_valeur_sat[newtype] - dict_valeur_sat[oldtype] == 0:
+                dict_valeur_sat[newtype] - dict_valeur_sat[oldtype] == 0:
             return
 
         dir_deltas = [[(0, 1), (0, 2)],
@@ -317,85 +317,61 @@ class Agent_Hitman:
                     self.sat_regard[new_ligne][new_colonne] = max(0, new_val)
 
         self.sat_connue[ligne][colonne] = newtype
+        self.correct_sat()
 
     def correct_sat(self) -> None:
-        if newtype == SAT_GARDE:
-            """
-            Je connaissais déjà ce garde je rajoute sa vision dans la bonne direction
-            """
-            orientation = self.mat_connue[ligne][colonne]
-            for v in range(1, MAX_VISION_GARDE + 1):
-                if orientation == GardeNord:
-                    new_ligne = ligne - v
-                    new_colonne = colonne
-                elif orientation == GardeSud:
-                    new_ligne = ligne + v
-                    new_colonne = colonne
-                elif orientation == GardeEst:
-                    new_ligne = ligne
-                    new_colonne = colonne + v
-                elif orientation == GardeOuest:
-                    new_ligne = ligne
-                    new_colonne = colonne - v
+        """
+        On corrige la matrice de vision SAT en fonction de la matrice connue
+        """
 
-                if self.check_coord(new_ligne, new_colonne):
-                    self.sat_regard[new_ligne][new_colonne] += dict_valeur_sat[SAT_GARDE]
+        self.sat_regard = [[0 for _ in range(self.max_C)] for _ in range(self.max_L)]
+        dir_deltas = [[(0, 1), (0, 2)],
+                      [(0, -1), (0, -2)],
+                      [(1, 0), (2, 0)],
+                      [(-1, 0), (-2, 0)]]
 
-        # -------------------------------------------------- Verif -----------------------------------------------------
-
-        for ligne_index in range(self.max_L):
-            for colonne_index in range(self.max_C):
-                current_type = self.sat_connue[ligne_index][colonne_index]
-                current_loc = (ligne_index, colonne_index)
-
-                if current_type == SAT_GARDE:
-                    print("G en ", current_loc)
-                    print("Loc gardes : ", self.loc_gardes)
+        for ligne in range(self.max_L):
+            for colonne in range(self.max_C):
+                bloquee = False
+                current_type = self.sat_connue[ligne][colonne]
 
                 if current_type in [SAT_PERSONNE, SAT_PROBA_PERSONNE] or \
-                        (current_type == SAT_GARDE and current_loc not in self.loc_gardes):
-                    for direction in dir_deltas:
-                        vision_bloquee = False
-                        for deltas in direction:
-                            new_ligne = ligne_index + deltas[0]
-                            new_colonne = colonne_index + deltas[1]
+                        (current_type == SAT_GARDE and (ligne, colonne) not in self.loc_gardes):
+                    for dir in dir_deltas:
+                        for deltas in dir:
+                            new_ligne = ligne + deltas[0]
+                            new_colonne = colonne + deltas[1]
                             if self.check_coord(new_ligne, new_colonne):
                                 if self.mat_connue[new_ligne][new_colonne] != unknown and \
                                         self.mat_connue[new_ligne][new_colonne] != empty:
-                                    vision_bloquee = True
+                                    bloquee = True
 
-                                if vision_bloquee:
-                                    pds = dict_valeur_sat[current_type]
-                                    new_val = self.sat_regard[new_ligne][new_colonne] - pds
-                                    self.sat_regard[new_ligne][new_colonne] = max(0, new_val)
+                                if not bloquee:
+                                    self.sat_regard[new_ligne][new_colonne] += dict_valeur_sat[current_type]
 
-                elif current_type == SAT_GARDE and current_loc in self.loc_gardes:
-                    orientation = self.mat_connue[ligne_index][colonne_index]
-                    vision_bloquee = False
-                    pds = POIDS_GARDE
+                elif current_type == SAT_GARDE and (ligne, colonne) in self.loc_gardes:
+                    orientation = self.mat_connue[ligne][colonne]
                     for v in range(1, MAX_VISION_GARDE + 1):
                         if orientation == GardeNord:
-                            new_ligne = ligne_index - v
-                            new_colonne = colonne_index
+                            new_ligne = ligne - v
+                            new_colonne = colonne
                         elif orientation == GardeSud:
-                            new_ligne = ligne_index + v
-                            new_colonne = colonne_index
+                            new_ligne = ligne + v
+                            new_colonne = colonne
                         elif orientation == GardeEst:
-                            new_ligne = ligne_index
-                            new_colonne = colonne_index + v
+                            new_ligne = ligne
+                            new_colonne = colonne + v
                         elif orientation == GardeOuest:
-                            new_ligne = ligne_index
-                            new_colonne = colonne_index - v
+                            new_ligne = ligne
+                            new_colonne = colonne - v
 
                         if self.check_coord(new_ligne, new_colonne):
                             if self.mat_connue[new_ligne][new_colonne] != unknown and \
                                     self.mat_connue[new_ligne][new_colonne] != empty:
-                                vision_bloquee = True
+                                bloquee = True
 
-                            if vision_bloquee:
-                                new_val = self.sat_regard[new_ligne][new_colonne] - pds
-                                self.sat_regard[new_ligne][new_colonne] = max(0, new_val)
-
+                            if not bloquee:
+                                self.sat_regard[new_ligne][new_colonne] += dict_valeur_sat[SAT_GARDE]
 
     def sat_utilisation(self) -> None:
         """
@@ -817,7 +793,7 @@ class Agent_Hitman:
         Si un garde a un objet/mur/personne devant lui, son champ
         de vision doit être réduit.
         """
-        #Réinitialiser mat regard 
+        # Réinitialiser mat regard
         self.mat_regard = [[0] * self.max_C for _ in range(self.max_L)]
 
         for i in range(self.max_L):
