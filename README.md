@@ -20,6 +20,9 @@ Pour avancer il faut être bien orienté. La case où on veut aller doit être d
 Des rotations peuvent donc être nécessaire. Une methode, ```best_turn```, permet de s'orienter vers la case
 en faisant le moins de rotations possibles.
 
+#### Modélisation SAT
+
+#### Utilisation de cette modélisation
 
 
 ### Phase 2 :
@@ -50,17 +53,13 @@ Goal (
 )
 
 ##### Actions :
-
+```
 * Action(tourner_horaire, 
-
 PRECOND: Orientation(actuelle) = nord, 
-
 EFFECT: Orientation(est) )
 
 * Action(tourner_horaire, 
-
 PRECOND: Orientation(actuelle) = est, 
-
 EFFECT: Orientation(sud) )
 
 * Action(tourner_horaire, 
@@ -68,9 +67,7 @@ PRECOND: Orientation(actuelle) = sud,
 EFFECT: Orientation(ouest) )
 
 * Action(tourner_horaire, 
-
 PRECOND: Orientation(actuelle) = ouest, 
-
 EFFECT: Orientation(nord) )
 
 * Action(tourner_antihoraire, 
@@ -78,119 +75,92 @@ PRECOND: Orientation(actuelle) = nord,
 EFFECT: Orientation(ouest) )
 
 * Action(tourner_antihoraire, 
-
 PRECOND: Orientation(actuelle) = ouest, 
 EFFECT: Orientation(sud) )
 
 * Action(tourner_antihoraire, 
 PRECOND: Orientation(actuelle) = sud, 
-
 EFFECT: Orientation(est))
 
 * Action(tourner_antihoraire, 
-
 PRECOND: Orientation(actuelle) = est, 
-
 EFFECT: Orientation(nord) )
 
 * Action(avancer(x, y, x+1, y), 
-
 PRECOND: Orientation(actuelle) = nord ∧ Avance_possible(x+1, y), 
-
 EFFECT: Position(Hitman, x+1, y), ¬Position(Hitman, x, y) )
 
 * Action(avancer(x, y, x-1, y), 
-
 PRECOND: Orientation(actuelle) = sud ∧ Avance_possible(x-1, y), 
-
 EFFECT: Position(Hitman, x-1, y), ¬Position(Hitman, x, y) )
 
 * Action(avancer(x, y, x, y+1), 
-
 PRECOND: Orientation(actuelle) = est ∧ Avance_possible(x, y+1), 
-
 EFFECT: Position(Hitman, x, y+1), ¬Position(Hitman, x, y) )
 
 * Action(avancer(x, y, x, y-1), 
-
 PRECOND: Orientation(actuelle) = ouest ∧ Avance_possible(x, y-1), 
-
 EFFECT: Position(Hitman, x, y-1), ¬Position(Hitman, x, y) )
 
 * Action(tuer_cible(Hitman, cible, x,y),
-
 PRECOND: Position(Hitman, x, y) ∧ Sur_case(cible, x, y) ∧ Possède(corde_de_piano),
-
 EFFECT: ¬Sur_case(cible, x, y), ¬Position(Hitman, x, y) )
 
 * Action(neutraliser_garde(Hitman, Garde, x, y, x+1, y), 
-
 PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x+1, y) ∧ ¬Regarde(Hitman, garde),
 ∧ Orientation(actuelle) = nord ∧ regarde(garde, cible),
-
 EFFECT: ¬Garde_present(Garde, x, y), ¬regarde(garde, cible))
 
 * Action(neutraliser_garde(Hitman, Garde, x, y, x-1, y),
-
 PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x-1, y) ∧ ¬Regarde(Hitman, garde)
 ∧ Orientation(actuelle) = sud, 
-
-
 EFFECT: ¬Garde_present(Garde, x, y), ¬regarde(garde, cible))
 
 * Action(neutraliser_garde(Hitman, Garde, x, y, x, y+1),
-
 PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x, y+1) ∧ ¬Regarde(Hitman, garde)
 ∧ Orientation(actuelle) = est ∧ regarde(garde, cible),
-
 EFFECT: ¬Garde_present(Garde, x, y))
 
 * Action(neutraliser_garde(Hitman, Garde, x, y, x, y-1),
-
 PRECOND: Position(Hitman, x, y) ∧ Garde_present(Garde, x, y-1) ∧ ¬Regarde(Hitman, garde)
 ∧ Orientation(actuelle) = ouest ∧ regarde(garde, cible)
-
 EFFECT: ¬Garde_present(Garde, x, y), ¬regarde(garde, cible))
 
 
 * Action(neutraliser_civil(Hitman, Civil, x, y, x+1, y), 
-
 PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x+1, y) ∧ ¬Regarde(Hitman, civil)
 ∧ Orientation(actuelle) = nord ∧ regarde(garde, cible),
-
 EFFECT: ¬Civil_present(Civil, x, y), ¬regarde(garde, cible))
 
 * Action(neutraliser_civil(Hitman, Civil, x, y, x-1, y),
-
 PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x-1, y) ∧ ¬Regarde(Hitman, civil)
 ∧ Orientation(actuelle) = sud,
-
 EFFECT: ¬Civil_present(Civil, x, y))
 
 * Action(neutraliser_civil(Hitman, Civil, x, y, x, y+1),
-
 PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x, y+1) ∧ ¬Regarde(Hitman, civil)
 ∧ Orientation(actuelle) = est,
-
 EFFECT: ¬Civil_present(Civil, x, y))
 
 * Action(neutraliser_civil(Hitman, Civil, x, y, x, y-1),
-
 PRECOND: Position(Hitman, x, y) ∧ Civil_present(Civil, x, y-1) ∧ ¬Regarde(Hitman, civil)
 ∧ Orientation(actuelle) = ouest,
-
 EFFECT: ¬Civil_present(Civil, x, y))
 
 
 * Action(prendre_corde(Hitman, corde_de_piano, x, y), 
-
 PRECOND: Position(Hitman, x, y) ∧ Sur_case(corde_de_piano, x, y), 
-
 EFFECT: Possède(corde_de_piano) ∧ ¬Sur_case(corde_de_piano, x, y))
 
+
 * Action(prendre_costume(Hitman, costume, x, y), 
-
 PRECOND: Position(Hitman, x, y) ∧ Sur_case(costume, x, y), 
-
 EFFECT: Possède(costume) ∧ ¬Sur_case(costume, x, y) )
+```
+
+### Avantages et inconvénients de notre programme
+
+#### Avantages
+
+#### Inconvénients
 
