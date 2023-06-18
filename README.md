@@ -191,6 +191,25 @@ EFFECT: Possède(costume) ∧ ¬Sur_case(costume, x, y) )
 ### Avantages et inconvénients de notre programme
 
 #### Avantages
+Le nombre de rotation est optimisé afin de faire le nombre minimum de rotation pour se tourner vers la case où on veut aller.
+
+Phase 1 :
+La modélisation SAT permet d'être opérationnelle même sur des maps plus grande que la map actuelle (des maps de taille 10x10 par exemple).
+
+Pour le choix du déplacement on prend en compte le coût du regard des gardes. 
+
+Phase 2 : 
+On fait des simulations avec différents chemins pour savoir celui qui est le moins coûteux. Les coûts pris en compte sont : 
+* les coûts de déplacements
+* les coûts des rotations
+* le nombre de fois qu'on est vu par un garde
+* les coûts liés au costume (si on le prend)
+* les coûts liés au meurtre de la cible
+* les coûts liés au meutre d'un garde ou d'une cible
+
+
+On neutralise des civils ou invités s'ils regardent la cible. Cela permet de réduire drastiquement le coût lorsqu'on tue la cible.
+
 
 #### Inconvénients
 
