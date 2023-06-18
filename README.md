@@ -193,12 +193,13 @@ EFFECT: Possède(costume) ∧ ¬Sur_case(costume, x, y) )
 #### Avantages
 Le nombre de rotation est optimisé afin de faire le nombre minimum de rotation pour se tourner vers la case où on veut aller.
 
-Phase 1 :
+##### Phase 1 :
 La modélisation SAT permet d'être opérationnelle même sur des maps plus grande que la map actuelle (des maps de taille 10x10 par exemple).
 
 Pour le choix du déplacement on prend en compte le coût du regard des gardes. 
+On cherche la case inconnue la plus proche et on s'approche de cette case jusqu'à la voir. On ne va donc pas forcément jusqu'à aller sur cette case. Une fois qu'on la voit on recherche l'autre case inconnue la plus proche. Cette méthode permet de réduire les coûts car une fois qu'on connaît la case, on n'essaye pas d'aller dessus.
 
-Phase 2 : 
+###### Phase 2 : 
 On fait des simulations avec différents chemins pour savoir celui qui est le moins coûteux. Les coûts pris en compte sont : 
 * les coûts de déplacements
 * les coûts des rotations
@@ -212,4 +213,8 @@ On neutralise des civils ou invités s'ils regardent la cible. Cela permet de r�
 
 
 #### Inconvénients
+##### Phase 1 : 
+Pour se déplacer on cherche la case inconnue la plus proche. Cependant on cherche la case la plus proche avec une certaine préférence. Ce qui amène des fois à passer plusieurs fois sur une même case selon la configuration de la map. 
 
+##### Phase 2 :
+Ne fait des simulations qu'avec quelques chemins. Lorsqu'une action est faite le chemin n'est pas recalculé. Ce recalcule de chemin pourrait peut-être permettre de trouver un meilleur trajet.
