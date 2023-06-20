@@ -240,7 +240,7 @@ La modélisation SAT permet d'être opérationnelle même sur des maps plus gran
 Pour le choix du déplacement on prend en compte le coût du regard des gardes. 
 On cherche la case inconnue la plus proche et on s'approche de cette case jusqu'à la voir. On ne va donc pas forcément jusqu'à aller sur cette case. Une fois qu'on la voit on recherche l'autre case inconnue la plus proche. Cette méthode permet de réduire les coûts car une fois qu'on connaît la case, on n'essaye pas d'aller dessus.
 
-###### Phase 2 : 
+##### Phase 2 : 
 On fait des simulations avec différents chemins pour savoir celui qui est le moins coûteux. Les coûts pris en compte sont : 
 * les coûts de déplacements
 * les coûts des rotations
