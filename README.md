@@ -54,6 +54,7 @@ cd IA02-Projet
 * Exécuter le fichier ```main.py```
 Le programme demandera si on veut la phase 1 avec ou sans SAT. On entre y pour avoir le SAT dans la phase 1.
 
+## Explication du projet
 Le projet consiste à permettre à l'agent Hitman de se déplacer dans une map 2D pour tuer une cible.
 Au début Hitman ne connait pas la map. Il doit l'explorer.
 Nous disposons d'une matrice des regards (attribut ```self.mat_regard```) qui indique dans quelles directions regardent les gardes et civils qu'on a trouvé.
@@ -125,7 +126,7 @@ Lorsqu'on a le costume on prend en compte d'essayer de mettre le costume lorsqu'
 De plus lorsqu'on a mis le costume on prend en compte qu'on n'est pas vu par un garde lorsqu'on passe devant
 son champ de vision.
 
-#### STRIPS :
+## STRIPS :
 
 ##### Fluents : 
 Orientation(actuelle), Position(Hitman, x, y), Sur_case(cible, x, y), Sur_case(corde_de_piano, x, y), Sur_case(costume, x, y), Sur_case(civil, x, y), Sur_case(garde, x, y), Regarde(Hitman, garde), Regarde(Hitman, civil),  Regarde(garde, cible), Possède(corde_de_piano), Possède(costume), Avance_possible(x, y), Garde_present(Garde, x, y), Civil_present(Civil, x, y)
@@ -244,7 +245,7 @@ PRECOND: Position(Hitman, x, y) ∧ Sur_case(costume, x, y),
 EFFECT: Possède(costume) ∧ ¬Sur_case(costume, x, y) )
 ```
 
-### Avantages et inconvénients de notre programme
+## Avantages et inconvénients de notre programme
 
 #### Avantages
 Le nombre de rotation est optimisé afin de faire le nombre minimum de rotation pour se tourner vers la case où on veut aller.
