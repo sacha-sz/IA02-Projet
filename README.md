@@ -40,7 +40,7 @@
 Ce projet a été réalisé dans le cadre de l'UV IA02 à l'UTC.
 Binôme : Lucas, Sacha.
 
-## Comment executer le code 
+## Comment exécuter le code 
 * Télécharger le rep. Par example via un gitclone :  
 ```bash
 git clone git@github.com:sacha-sz/IA02-Projet.git
@@ -51,7 +51,7 @@ git clone git@github.com:sacha-sz/IA02-Projet.git
 cd IA02-Projet
 ```
 
-* Executer le fichier ```main.py```
+* Exécuter le fichier ```main.py```
 Le programme demandera si on veut la phase 1 avec ou sans SAT. On entre y pour avoir le SAT dans la phase 1.
 
 Le projet consiste à permettre à l'agent Hitman de se déplacer dans une map 2D pour tuer une cible.
