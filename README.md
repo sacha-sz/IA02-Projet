@@ -39,6 +39,21 @@
 
 Ce projet a été réalisé dans le cadre de l'UV IA02 à l'UTC.
 Binôme : Lucas, Sacha.
+
+## Comment executer le code 
+* Télécharger le rep. Par example via un gitclone :  
+```bash
+git clone git@github.com:sacha-sz/IA02-Projet.git
+```
+
+* Accéder au dossier. Par example, via cd : 
+```bash
+cd IA02-Projet
+```
+
+* Executer le fichier ```main.py```
+Le programme demandera si on veut la phase 1 avec ou sans SAT. On entre y pour avoir le SAT dans la phase 1.
+
 Le projet consiste à permettre à l'agent Hitman de se déplacer dans une map 2D pour tuer une cible.
 Au début Hitman ne connait pas la map. Il doit l'explorer.
 Nous disposons d'une matrice des regards (attribut ```self.mat_regard```) qui indique dans quelles directions regardent les gardes et civils qu'on a trouvé.
