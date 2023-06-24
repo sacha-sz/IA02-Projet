@@ -51,6 +51,8 @@ git clone git@github.com:sacha-sz/IA02-Projet.git
 cd IA02-Projet
 ```
 
+* Installer l'exécutable ```gophersat``` dans le dossier, avec les droits d'exécution. 
+
 * Exécuter le fichier ```main.py```
 Le programme demandera si on veut la phase 1 avec ou sans SAT. On entre y pour avoir le SAT dans la phase 1.
 
