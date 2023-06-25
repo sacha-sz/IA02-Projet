@@ -28,6 +28,8 @@ def main():
     print("------------------------------------------")
     print("Phase 2 : Elimination de la cible")
     hitman.phase_2()
+    print("score phase 1 : ", hitman.score_phase1)
+
     print("Les deux phases du jeu sont terminées")
     print("Fin du jeu !")
 
