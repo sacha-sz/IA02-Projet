@@ -1,5 +1,6 @@
 import subprocess
 from variables import *
+import os
 
 
 class Gophersat:
@@ -14,6 +15,10 @@ class Gophersat:
         self.dVar: Dict[Tuple[int, int, str], int] = {}
         self.dVarInv: Dict[int, Tuple[int, int, str]] = {}
 
+        if os.name == "nt":
+            self.gophersat_path = "gophersat"
+        else:
+            self.gophersat_path = "./gophersat"
         # Initialisation des littéraux
         for i in range(nb_ligne):
             for j in range(nb_colonnes):
@@ -150,7 +155,7 @@ class Gophersat:
         with open(temp_filename, "a") as f:
             f.write(str(-self.dVar[(pos_test[0], pos_test[1], "P")]) + " 0\n")
 
-        res = subprocess.run(["./gophersat", temp_filename], capture_output=True)
+        res = subprocess.run([self.gophersat_path, temp_filename], capture_output=True)
         res = res.stdout.decode("utf-8")
 
         if "UNSATISFIABLE" in res:
@@ -161,7 +166,7 @@ class Gophersat:
                 f.write(str(self.dVar[(pos_test[0], pos_test[1], "P")]) + " 0\n")
 
             res = subprocess.run(
-                ["./gophersat", temp_filename], capture_output=True)
+                [self.gophersat_path, temp_filename], capture_output=True)
             res = res.stdout.decode("utf-8")
 
             if "UNSATISFIABLE" in res:
@@ -180,7 +185,7 @@ class Gophersat:
         with open(temp_filename, "a") as f:
             f.write(str(-self.dVar[(pos_test[0], pos_test[1], pos_test[2])]) + " 0\n")
 
-        res = subprocess.run(["./gophersat", temp_filename], capture_output=True)
+        res = subprocess.run([self.gophersat_path, temp_filename], capture_output=True)
         res = res.stdout.decode("utf-8")
 
         return "UNSATISFIABLE" in res

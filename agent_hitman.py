@@ -39,6 +39,7 @@ class Agent_Hitman:
         self.gardesTrouves = False
         self.phase1 = True
         self.personne_max_trouve = False
+        self.score_phase1 = 0
 
     def __str__(self):
         """
@@ -336,8 +337,8 @@ class Agent_Hitman:
 
                 if current_type in [SAT_PERSONNE, SAT_PROBA_PERSONNE] or \
                         (current_type == SAT_GARDE and (ligne, colonne) not in self.loc_gardes):
-                    for dir in dir_deltas:
-                        for deltas in dir:
+                    for direc in dir_deltas:
+                        for deltas in direc:
                             new_ligne = ligne + deltas[0]
                             new_colonne = colonne + deltas[1]
                             if self.check_coord(new_ligne, new_colonne):
@@ -363,8 +364,12 @@ class Agent_Hitman:
                         elif orientation == GardeOuest:
                             new_ligne = ligne
                             new_colonne = colonne - v
+                        else:
+                            new_ligne = None
+                            new_colonne = None
 
-                        if self.check_coord(new_ligne, new_colonne):
+                        if new_ligne is not None and new_colonne is not None and \
+                                self.check_coord(new_ligne, new_colonne):
                             if self.mat_connue[new_ligne][new_colonne] != unknown and \
                                     self.mat_connue[new_ligne][new_colonne] != empty:
                                 bloquee = True
@@ -467,7 +472,7 @@ class Agent_Hitman:
                     visite[nx][ny] = True
                     file_attente.append((nx, ny, distance + 1))
 
-        sorted_unknown = sorted(nearest_unknown, key=lambda x: x[2])
+        sorted_unknown = sorted(nearest_unknown, key=lambda unk: unk[2])
 
         # On retourne tous les unkown ayant la même distance
         nearest_distance = sorted_unknown[0][2]
@@ -598,7 +603,6 @@ class Agent_Hitman:
                 for nu in nearest_unknown:
                     pos_nu.append((nu[0], nu[1]))
                 actual_target = pos_nu[0]
-                # print("actual target : ", actual_target)
 
                 a_star_path = self.a_star((self.translate_ligne(self._x), self._y), (pos_nu[0]))
 
@@ -623,6 +627,7 @@ class Agent_Hitman:
         self.oracle.send_content(self.conversion_mat_connue())
         _, score, history, true_map = self.oracle.end_phase1()
         print(score)
+        self.score_phase1 = score
         self.phase1 = False
 
     def move(self) -> None:
@@ -814,7 +819,6 @@ class Agent_Hitman:
                             else:
                                 self.mat_regard[i + v][j] += 5
 
-
                         elif self.mat_connue[i][j] == GardeNord and i - v >= 0:
 
                             if self.mat_connue[i - v][j] != empty and self.mat_connue[i - v][j] != unknown:
@@ -882,9 +886,7 @@ class Agent_Hitman:
         cost = 0
         has_suit = False
         suit_on = False
-        # print("path : ", path)
-        if direction_hitman:
-            direction = direction_hitman
+        direction = direction_hitman
 
         x_simu = x
         y_simu = y
@@ -893,10 +895,8 @@ class Agent_Hitman:
         mat_regarde_invite_copie = copy.deepcopy(self.mat_regard_invite)
         mat_connue_copie = copy.deepcopy(self.mat_connue)
 
-        for id, coord in enumerate(path):
-            # print("coord : ", coord)
+        for id_path, coord in enumerate(path):
             if case_devant_nous(x_simu, y_simu, direction) != coord:
-                # print("case devant nous : ", self.case_devant_nous(x_simu, y_simu, direction))
                 clockwise_orientation = [HC.N, HC.E, HC.S, HC.W]
                 anti_clockwise_orientation = [HC.N, HC.W, HC.S, HC.E]
                 if coord[0] == x_simu:
@@ -965,8 +965,8 @@ class Agent_Hitman:
             neighbours = [(coord[0] + 1, coord[1]), (coord[0] - 1, coord[1]), (coord[0], coord[1] + 1),
                           (coord[0], coord[1] - 1)]
             for neighbour in neighbours:
-                if self.check_coord(neighbour[0], neighbour[1]) and mat_connue_copie[neighbour[0]][
-                    neighbour[1]].startswith("G"):
+                if self.check_coord(neighbour[0], neighbour[1]) and \
+                        mat_connue_copie[neighbour[0]][neighbour[1]].startswith("G"):
                     vision = self.get_vision_guard(neighbour, mat_connue_copie)
                     target_pos = self.find_stg(Target)
                     for v in vision:
@@ -978,8 +978,8 @@ class Agent_Hitman:
                             mat_connue_copie[neighbour[0]][neighbour[1]] = empty
                             for v2 in vision:
                                 mat_regard_copie[v2[0]][v2[1]] -= 5
-                if self.check_coord(neighbour[0], neighbour[1]) and mat_connue_copie[neighbour[0]][
-                    neighbour[1]].startswith("I"):
+                if self.check_coord(neighbour[0], neighbour[1]) and \
+                        mat_connue_copie[neighbour[0]][neighbour[1]].startswith("I"):
                     vision = self.get_vision_invite(neighbour, mat_connue_copie)
                     target_pos = self.find_stg(Target)
                     for v in vision:
@@ -1005,7 +1005,6 @@ class Agent_Hitman:
 
             x_simu = coord[0]
             y_simu = coord[1]
-            # print("cost : ", cost)
 
         return cost
 
@@ -1066,7 +1065,6 @@ class Agent_Hitman:
 
         # On prend le chemin le plus court
         chemin = min(couts_chemins, key=couts_chemins.get)
-        # print("Shortest path : ", chemin)
 
         if chemin == 1:
             return chemin_1
@@ -1223,13 +1221,9 @@ class Agent_Hitman:
         self.sat = False  # Si le sat est à True les trajets d'a_start sont modifiés.
 
         self.info_actuelle = self.oracle.start_phase2()
-        # print("direction : ", self.info_actuelle["orientation"])
-        # print("penalites : ", self.info_actuelle["penalties"])
         self._x = self.info_actuelle["position"][1]
         self._y = self.info_actuelle["position"][0]
         print(self)
-
-        # print("penalites : ", self.info_actuelle["penalties"])
 
         chemin = self.get_shortest_path_phase2()
         print("chemin : ", chemin)
@@ -1243,28 +1237,24 @@ class Agent_Hitman:
             queue_action.append(coord)
 
         while len(queue_action) != 0:
-            # print("penalites : ", self.info_actuelle["penalties"])
             next_action = queue_action.popleft()
             self.best_turn(next_action[0], next_action[1])
             self.info_actuelle = self.oracle.move()
-            # print("penalites : ", self.info_actuelle["penalties"])
+
             self._x = self.info_actuelle["position"][1]
             self._y = self.info_actuelle["position"][0]
 
             if self.mat_connue[self.translate_ligne(self._x)][self._y] == Corde:
                 self.info_actuelle = self.oracle.take_weapon()
-                # print("penalites : ", self.info_actuelle["penalties"])
                 self.mat_connue[self.translate_ligne(self._x)][self._y] = empty
 
             elif self.mat_connue[self.translate_ligne(self._x)][self._y] == Costume:
                 self.info_actuelle = self.oracle.take_suit()
-                # print("penalites : ", self.info_actuelle["penalties"])
                 possede_costume = True
                 self.mat_connue[self.translate_ligne(self._x)][self._y] = empty
 
             elif self.mat_connue[self.translate_ligne(self._x)][self._y] == Target:
                 self.info_actuelle = self.oracle.kill_target()
-                # print("penalites : ", self.info_actuelle["penalties"])
                 self.mat_connue[self.translate_ligne(self._x)][self._y] = DEAD
 
             if possede_costume and not self.is_seen():
@@ -1274,7 +1264,6 @@ class Agent_Hitman:
                           (self.translate_ligne(self._x), self._y + 1), (self.translate_ligne(self._x), self._y - 1)]
 
             for ngb in neighbours:
-                # print("case ngb : ", self.mat_connue[ngb[0]][ngb[1]])
 
                 if not self.check_coord(ngb[0], ngb[1]):
                     continue
@@ -1291,16 +1280,12 @@ class Agent_Hitman:
                         if rg == target_pos:
 
                             self.best_turn(ngb[0], ngb[1])
-                            if self.mat_connue[ngb[0]][ngb[1]] == GardeEst or self.mat_connue[ngb[0]][
-                                ngb[1]] == GardeNord or self.mat_connue[ngb[0]][ngb[1]] == GardeOuest or \
-                                    self.mat_connue[ngb[0]][ngb[1]] == GardeSud:
+                            if self.mat_connue[ngb[0]][ngb[1]] in [GardeEst, GardeNord, GardeOuest, GardeSud]:
                                 self.info_actuelle = self.oracle.neutralize_guard()
-                                # print("penalites : ", self.info_actuelle["penalties"])
 
                             self.mat_connue[ngb[0]][ngb[1]] = empty
 
-                if self.mat_connue[ngb[0]][ngb[1]] == InviteEst or self.mat_connue[ngb[0]][ngb[1]] == InviteNord or \
-                        self.mat_connue[ngb[0]][ngb[1]] == InviteOuest or self.mat_connue[ngb[0]][ngb[1]] == InviteSud:
+                if self.mat_connue[ngb[0]][ngb[1]] in [InviteEst, InviteNord, InviteOuest, InviteSud]:
                     # Regarder si cet invité regarde la cible :
                     # Si oui, on le tue
                     # Sinon on passe devant lui
@@ -1312,16 +1297,12 @@ class Agent_Hitman:
                         if rg == target_pos:
 
                             self.best_turn(ngb[0], ngb[1])
-                            if self.mat_connue[ngb[0]][ngb[1]] == InviteEst or self.mat_connue[ngb[0]][
-                                ngb[1]] == InviteNord or self.mat_connue[ngb[0]][ngb[1]] == InviteOuest or \
-                                    self.mat_connue[ngb[0]][ngb[1]] == InviteSud:
+                            if self.mat_connue[ngb[0]][ngb[1]] in [InviteEst, InviteNord, InviteOuest, InviteSud]:
                                 self.info_actuelle = self.oracle.neutralize_civil()
-                                # print("penalites : ", self.info_actuelle["penalties"])
 
                             self.mat_connue[ngb[0]][ngb[1]] = empty
 
             print(self)
 
         _, score, history = self.oracle.end_phase2()
-        print("score : ", score)
-        # print("history : ", history)
+        print("score phase 2 : ", score)
