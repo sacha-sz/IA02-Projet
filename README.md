@@ -1,302 +1,225 @@
-# IA02-Projet
-:gun: :robot: :left_right_arrow: :ninja: IA capable de jouer à Hitman
+# 🎯 IA02 - Agent Hitman : Exploration et Planification par SAT
+
+Ce dépôt contient le code source réalisé dans le cadre du projet de l'UV **IA02** à l'UTC, dédiée aux **techniques formelles de l'intelligence artificielle**.
+
+L'agent **Hitman** évolue dans une carte 2D qu'il ne connaît pas initialement. Il doit l'**explorer**, **déduire** la position des gardes et civils grâce à un solveur SAT, puis **éliminer la cible** en minimisant son score de pénalité.
+
+Projet réalisé en **Python** — Binôme n°22 : **Lucas & Sacha**.
+
+<br/>
+
+## 📌 Vue d'ensemble
+
+| Phase | Objectif | Approche |
+|-------|----------|----------|
+| **Phase 1** | Explorer la carte et identifier les obstacles | Algorithme A\* + solveur SAT (gophersat) |
+| **Phase 2** | Éliminer la cible en minimisant le coût | Planification STRIPS + simulation de chemins |
+
+<br/>
+
+## 🗂 Structure du projet
+
+| Fichier | Rôle |
+|---------|------|
+| [`main.py`](main.py) | Point d'entrée — lance les deux phases et affiche les scores |
+| [`agent_hitman.py`](agent_hitman.py) | Contrôleur principal de l'agent : déplacements, A\*, appels SAT, stratégie Phase 2 |
+| [`gophersat.py`](gophersat.py) | Interface avec le solveur SAT : gestion des clauses, encodage, déduction |
+| [`hitman.py`](hitman.py) | Arbitre du jeu fourni (`HitmanReferee`) et définition des types de cases |
+| [`variables.py`](variables.py) | Constantes du projet (types de tuiles, paramètres SAT, pondérations) |
+
+<br/>
+
+## 🔍 Phase 1 — Exploration par déduction SAT
+
+Hitman explore la carte en cherchant à chaque étape la **case inconnue la plus proche**. Le chemin vers cette case est calculé par **A\***, en tenant compte des regards des gardes déjà découverts et du coût des déplacements.
+
+### Modélisation SAT
+
+Chaque case est représentée par trois variables propositionnelles :
+
+| Variable | Signification |
+|----------|---------------|
+| `P` | La case contient une personne |
+| `G` | La case contient un garde |
+| `I` | La case contient un invité (civil) |
+
+Contrainte structurelle :
+
+$$P \Leftrightarrow G \vee I \quad \Longleftrightarrow \quad (\neg P \vee G \vee I) \wedge (P \vee \neg G) \wedge (P \vee \neg I)$$
+
+### Apports sensoriels
+
+- **Voir** une case : certitude directe sur son contenu (garde, civil, ou vide)
+- **Entendre** (champ d'ouïe) :
+  - 0 personne → négation de toutes les cases de la zone
+  - 1 à `BROUHAHA` personnes → contrainte d'égalité exacte
+  - ≥ `BROUHAHA` personnes → contrainte de minimum
+
+### Optimisation du nombre de clauses
+
+Plutôt que d'encoder dès le départ toutes les combinaisons possibles sur la carte entière, les négations de type (`¬G`, `¬I`) sont ajoutées **dynamiquement** dès que le nombre maximal de personnes du type correspondant a été atteint. Cela réduit le nombre de clauses de **plusieurs dizaines de millions** (52 millions sur une map 9×9) à **quelques milliers**, sans perte de précision, pour un temps de déduction d'environ **60 secondes** sur une map 6×7.
+
+### Navigation
+
+- La case inconnue la plus proche est ciblée ; l'agent s'en approche jusqu'à la **voir** (sans nécessairement s'y rendre).
+- La méthode `best_turn` optimise les rotations pour s'orienter vers la destination avec le **minimum de tours**.
+- Le paramètre `POIDS_PROBA_PERSONNE` (dans `variables.py`) ajuste la frilosité de l'agent face aux cases inconnues.
+
+<br/>
+
+## 🗡 Phase 2 — Planification de l'élimination
+
+L'agent connaît désormais la carte complète. Il simule **trois chemins candidats** et choisit le moins coûteux :
+
+| Chemin | Description |
+|--------|-------------|
+| **1** | Départ → Cible (tuer) → Retour |
+| **2** | Départ → Costume → Corde → Cible (tuer) → Retour |
+| **3** | Départ → Corde → Costume → Cible (tuer) → Retour |
+
+Le coût de chaque chemin prend en compte : déplacements, rotations, nombre de fois vu par un garde, utilisation du costume, neutralisation de civils/gardes gênants, et meurtre de la cible.
+
+Les **civils qui regardent la cible** sont neutralisés en priorité pour réduire le coût de l'élimination finale.
+
+<br/>
+
+## 📐 Formalisation STRIPS
+
+### Fluents
+
 ```
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⣤⠤⠤⠤⠤⣤⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⠶⠋⠉⠀⠀⠀⠀⠀⠀⠀⠀⠉⠑⢦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡞⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢦⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⣤⣶⡶⣶⢦⠀⠀⠀⠀⠀⠀⠀⡾⠀⠀⠀⢀⣠⠀⠀⠀⠀⠀⠀⠀⠠⢤⣀⠀⠀⠸⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠸⡏⠁⣠⡤⠾⣆⠀⠀⠀⠀⠀⢸⡇⢠⠖⣾⣭⣀⡀⠀⠀⠀⠀⠀⠀⣀⣠⣼⡷⢶⡀⢻⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⢹⣿⠋⠈⣩⢿⡄⠀⠀⠀⠀⣾⠀⣿⠀⠀⠉⠉⠚⠻⠿⠶⠾⠿⠛⢋⠉⠁⠀⠈⡇⠘⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠈⢯⣉⠟⠛⣲⢷⡀⠀⠀⠀⡿⠀⢻⣄⡀⠀⠀⠀⠀⢀⡴⠂⣀⠴⠃⠀⠀⢀⣰⠇⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠘⡏⢒⡶⠧⢬⣧⠀⠀⠀⡇⠀⢸⡏⠉⣷⣶⣲⠤⢤⣶⣯⡥⠴⣶⣶⣎⠉⢻⠀⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠻⡷⠶⣤⣏⣙⡆⠀⠀⡇⠀⢸⡆⠀⠑⢆⣩⡿⣖⣀⣰⡶⢯⣁⡴⠃⠀⣸⡄⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⢧⠾⢥⣰⣟⣹⡄⠀⣧⠀⣼⠘⢦⣠⠴⠛⠋⠉⠉⠉⠉⠛⠳⢤⣀⡴⢻⡇⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠘⣇⣼⣋⣩⡏⣳⠀⢻⡀⢸⡴⠚⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠳⣼⡇⣶⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠸⣤⢾⣡⣾⣽⣷⢼⡇⢿⡄⠀⠀⠀⠀⠠⣄⡀⢀⡀⠀⠀⠀⠀⠀⢸⠇⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⢀⣀⣿⠿⣓⣋⡥⣿⠟⢷⠘⣿⣆⠀⠀⠀⠀⠀⠉⠉⠀⠀⠀⠀⠀⣰⡿⢀⡏⢳⡦⣤⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⢀⣴⣯⣁⣠⣿⠁⠀⠀⠻⡄⠀⠀⠸⣎⢧⡀⠀⠀⠀⠀⠀⢰⣿⣷⣀⣼⣫⠃⠀⠀⣸⠇⠀⠀⠙⣦⣀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⢰⠞⣍⡍⠉⠉⣿⢹⡀⠀⠀⠀⠱⡄⠀⠀⠈⠳⢽⣦⣀⠀⠀⢰⣿⣿⣟⣿⠕⠋⠀⠀⡰⠃⠀⠀⠀⣼⠃⠀⠉⢉⣭⠽⢶⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⢨⡷⠋⠙⢷⡀⠹⣾⣧⠀⠀⠀⠀⠈⠦⣄⠀⠀⠀⠀⠈⠉⠉⣿⣾⠁⣼⡇⠀⠀⡠⠞⠁⠀⠀⠀⣸⠏⠀⠀⣠⡞⠉⠻⣾⡀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⢰⡟⠀⠀⠀⠀⢻⡄⢷⠙⣇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⡏⡏⠀⠈⡇⠀⠀⠀⠀⠀⠀⠀⣴⠏⠀⠀⢠⡟⠀⠀⠀⠘⣷⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⣾⡇⠀⠀⠀⠀⠀⢿⡘⣇⠙⣧⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⢱⠁⠐⠲⡇⢀⡀⠀⠀⠀⠀⣼⠃⠀⠀⢀⡾⠀⠀⠀⠀⠀⢹⣧⠀⠀⠀⠀⠀⠀
-⠀⢠⣿⡇⠀⠀⠀⠀⠀⣨⡇⠸⡄⠈⠻⣦⡀⠀⠀⠀⠀⠀⠀⠀⢀⡏⠘⣀⣀⣀⡟⠉⣿⠀⠀⢠⡞⠁⠀⠀⠀⣸⣃⠀⠀⠀⠀⠀⠘⡏⢧⠀⠀⠀⠀⠀
-⠀⣿⠀⢻⡀⠀⣠⠔⠛⠉⠻⣄⠹⡄⠀⠈⠙⠶⢤⣀⡀⠀⠀⢀⣿⣟⡻⣷⠛⠛⠋⢉⣉⣻⡖⠋⠀⠀⠀⠀⡀⡏⢉⠟⠦⣀⠀⠀⠀⢧⠈⣇⠀⠀⠀⠀
-⢸⠃⠀⠈⣷⠈⢁⡄⠀⠀⠀⠘⢦⠘⣦⠀⠀⠀⠀⠈⠫⣭⣽⠟⠁⠈⢳⠈⡇⠀⠀⠀⠈⠉⠙⣷⠀⠀⠀⠀⢸⡽⠃⠀⠀⠈⡀⠀⠀⠘⢧⡸⡆⠀⠀⠀
-⢸⠀⠀⠀⠁⠀⡞⠀⠀⠀⠀⠀⠘⣇⠈⢳⡀⠀⠀⠀⣠⣾⡌⣆⠀⠀⢸⠀⣧⣀⣹⠤⣶⡀⢀⣿⠀⠀⠀⠀⣾⠁⠀⠀⠀⠀⣇⠀⠀⠀⠈⠈⢹⡀⠀⠀
-⢸⠀⡀⠀⠀⢸⠁⠀⢀⣠⡤⠶⠒⠛⠁⠉⠉⠉⠉⠉⠁⠈⣿⠘⢦⢀⡞⢰⣇⡀⢹⡧⣄⣩⡽⠃⠀⠀⠀⢸⠃⠀⠀⠀⠀⠀⢸⡆⠀⠀⠀⠐⡄⣧⠀⠀
-⢸⡀⣇⠀⠀⢸⣦⡞⢻⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠈⢷⡈⠻⣄⣾⠁⢉⡿⠁⠀⠀⠀⠀⠀⠀⠀⢸⠀⠀⠀⠀⠀⢀⣠⡇⠀⠀⠀⠀⠹⣻⠀⠀
-⠀⣇⢸⠀⢀⣴⣿⡇⠘⡆⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⠞⠁⠀⠈⠛⣦⣿⡿⠒⢯⣀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣇⠀⣀⣤⡴⢿⡉⠙⢶⣄⣀⡀⠀⠹⡄⠀
-⠀⠘⣾⡇⢸⠏⠀⣧⠀⢻⡀⠀⠀⠀⣀⣠⠶⠚⠉⠀⠀⠀⠀⠀⣠⡞⠁⠀⠀⠀⠙⠳⣄⠀⠀⠀⠀⠀⠀⢀⡿⠊⠁⠀⠀⠀⢱⡄⠈⣧⠉⠓⢄⠀⢧⠀
-⠀⠀⢹⡇⢸⠀⠀⠸⣇⠀⢳⡀⠈⠉⠀⠀⠀⠀⠀⠀⠀⠀⢀⡼⠿⡶⢞⣛⣛⣓⣒⣾⣶⣿⣲⣦⣤⠤⠚⠁⠀⠀⠀⠀⠀⠀⠀⢳⠀⢸⡆⠀⠀⠀⢿⡆
-⠀⠀⢸⡇⠀⠀⠀⠀⠙⣷⡀⠙⣆⠀⠀⠀⠀⠀⠀⢀⣠⡾⣋⠁⡾⣱⠋⠁⠀⠀⠀⠈⠙⣮⢷⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⡄⠘⡇⠀⠀⠀⢸⡇
-⠀⠀⠈⢿⡀⠀⠀⠀⠀⠈⢳⣄⠈⠱⣦⡀⣀⡠⠖⠋⡽⠛⢁⣾⡇⡇⠀⠀⠀⠀⠀⠀⠀⢸⡏⣷⠀⠰⠦⠤⢤⣤⣀⣤⠤⠴⠖⠂⡇⠀⡇⠀⠀⢀⡾⠁
-⠀⠀⠀⠘⠻⢦⣄⣀⣀⣀⣀⣈⣿⠦⠤⠿⠁⠀⠀⣼⡧⠔⢛⢿⡇⣇⠀⠀⠀⠀⠀⠀⠀⠀⡇⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡏⠀⡇⠀⣠⠟⠁⠀
-⠀⠀⠀⠀⠀⠀⠀⠈⠉⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⣿⣠⠴⠋⢀⣧⡸⣦⣀⣀⣀⣀⣀⣠⣼⣇⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⠇⢰⠗⠋⠁⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣇⡀⠀⠘⠙⣻⡶⠭⠭⠭⠽⠟⠒⠛⠛⠉⠉⠑⠒⠒⠒⠒⠒⠒⠒⠋⠉⠙⠒⠉⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-```
-
-Ce projet a été réalisé dans le cadre de l'UV IA02 à l'UTC.
-Binôme n°22 : Lucas, Sacha.
-
-## Comment exécuter le code 
-
-1. Installer l'exécutable ```gophersat``` dans le dossier qui contient les codes, avec les droits d'exécution.
-2. Exécuter le fichier ```main.py```
-3. Le programme demandera si on veut la phase 1 avec ou sans SAT (y : avec, n : sans)
-
-## Explication du projet
-Le projet consiste à permettre à l'agent Hitman de se déplacer dans une map 2D pour tuer une cible.
-Au début Hitman ne connait pas la map. Il doit l'explorer. 
-Un fichier ```agent_hitman.py``` nous sert de contrôleur. 
-Il gère notre agent hitman : les déplacements, l'appel à notre classe gophersat, l'appel à ```HitmanReferee```, etc. 
-Le fichier ```gophersat.py``` gère tout l'aspect gophersat : stockage des clauses, execution du gophersat, etc.
-Nous disposons d'une matrice des regards (attribut ```self.mat_regard```) qui indique dans quelles directions regardent les gardes et civils qu'on a trouvés.
-Nous avons aussi une matrice de connaissance (attribut ```self.mat_connue```) qui contient toutes les informations sur la map qu'on a découvert.
-L'objectif est réalisé en deux phases : 
-
-### Phase :one: :
-Hitman doit effectuer des déductions, pour cela, nous utilisons le solveur SAT gophersat.
-
-On explore la map en trouvant l'inconnu le plus proche et l'agent essaye de se rapprocher de cette case pour la voir.
-Le chemin est généré en utilisant l'algorithme A*. On prend en compte les regards des gardes si on les connait déjà. On prend bien-sûr en compte le coup des déplacements.
-
-Pour avancer, il faut être bien orienté. La case où on veut aller doit être devant nous.
-Des rotations peuvent donc être nécessaires. Une methode, ```best_turn```, permet de s'orienter vers la case
-en faisant le moins de rotations possible.
-
-#### Modélisation SAT
-Nous avons choisi de modéliser le problème de la manière suivante. 
-Une case est représentée par trois variables propositionnelles :
-* ```P``` : la case est une personne
-* ```I``` : la case est un invité (civil)
-* ```G``` : la case est un garde
-
-Nous avons donc la contrainte suivante : 
-* ```P ⇔ G ∨ I```  ⇔ ```(¬P ∨ G ∨ I) ∧ (P ∨ ¬G) ∧ (P ∨ ¬I)```
-
-
-Le fait de **voir** nous ajoute les certitudes suivantes :
-- Si on voit un garde, on sait que la case est un garde et donc une personne
-- De même pour un civil
-- Si on voit tout autre chose, on sait que la case n'est pas une personne
-
-Le fait d'**entendre** nous ajoute les certitudes suivantes :
-- une valeur fixe d'un nombre de personnes qui sont dans le champ d'écoute,
-si ce nombre est compris entre 1 et BROUHAHA.
-- une valeur minimum (BROUHAHA) de personnes qui sont dans le champ d'écoute,
-si ce nombre est compris entre BROUHAHA et nombre maximum de personnes dans le champ d'écoute.
-- la négation des personnes de la zone d'écoute si le nombre de personnes dans le champ d'écoute est 0.
-
-#### Utilisation de cette modélisation
-Pour utiliser cette modélisation, nous avons d'abord besoin d'ajouter les certitudes que nous avons sur la map (entendre, voir).
-Notre méthode pour ne pas faire exploser le nombre de clauses est de ne pas représenter dès le début le nombre maximal de personnes de chaque type sur l'ensemble de la map.
-Mais plutôt d'ajouter la négation de ce type, sur les cases non encore découvertes, lorsque nous avons vu le nombre maximal de personnes de ce type.
-Cette méthode nous a permis de passer de plusieurs dizaines de millions de clauses (52 sur une map 9·9) à quelques milliers seulement.
-Et ce, sans perdre en précision et en gagnant en rapidité d'exécution (environ **60** secondes pour effectuer toutes les déductions sur une map 6·7).
-
-Ensuite, nous utilisons gophersat pour résoudre le problème. 
-
-Mais quel est ce problème ?
-Ce problème est de prédire la valeur d'une case non découverte. 
-Pour cela, nous avons tout d'abord la fonction ```test_personne```, dont le nom est assez explicite.
-Une fois que nous avons pu déduire une personne, nous tentons de déduire son type (garde ou civil) avec ```test_type```.
-
-Vous pouvez modifier la valeur de POIDS_PROBA_PERSONNE dans le fichier ```variables.py```.
-Cette modification rendra Hitman plus ou moins frileux à l'idée de parcourir une case inconnue.
-
-### Phase :two: :
-L'agent doit se déplacer dans la map pour tuer la cible.
-On utilise pour cela l'algorithme A*. Plusieurs optimisations sont faites.
-Tout d'abord, on regarde le chemin qui coute le moins pour tuer la cible parmi ces chemins :
-
-* **chemin 1** : aller de la case départ puis à la case où se trouve et ensuite aller à la case de la cible pour la tuer et revenir à la case de départ
-* **chemin 2** : aller de la case départ à la case du costume puis aller à la case de la corde ensuite aller la case cible pour la tuer et revenir à la case de départ
-* **chemin 3** : aller de la case départ à la case de la corde puis aller à la case du costume ensuite aller la case cible pour la tuer et revenir à la case de la corde après aller à la case de départ
-
-
-Lorsqu'on a le costume, on prend en compte d'essayer de mettre le costume lorsqu'on ne nous voit pas. 
-De plus lorsqu'on a mis le costume, on prend en compte qu'on n'est pas vu par un garde lorsqu'on passe devant
-son champ de vision.
-
-## STRIPS :
-
-##### Fluents : 
-```
-Orientation(actuelle), 
-Position(Hitman, x, y), 
-Sur_case(cible, x, y), 
-Sur_case(corde_de_piano, x, y), 
-Sur_case(costume, x, y), 
-Sur_case(civil, x, y), 
-Sur_case(garde, x, y), 
-Regarde(Hitman, garde), 
-Regarde(Hitman, civil), 
-Regarde(garde, cible), 
-Possède(corde_de_piano), 
-Possède(costume), 
-Avance_possible(x, y), 
+Orientation(actuelle)
+Position(Hitman, x, y)
+Sur_case(cible, x, y)
+Sur_case(corde_de_piano, x, y)
+Sur_case(costume, x, y)
+Sur_case(civil, x, y)
+Sur_case(garde, x, y)
+Regarde(Hitman, garde | civil)
+Regarde(garde, cible)
+Possède(corde_de_piano)
+Possède(costume)
+Avance_possible(x, y)
 ```
 
+### État initial / But
 
 ```
 Init(
     Position(Hitman, 0, 0),
-    Sur_case(cible, x, y),
-    Sur_case(corde_de_piano, x2, y2),
-    Sur_case(costume, x3, y3),
-    Sur_case(garde, x4..xn, y4...yn),
-    Sur_case(civil, xn+1..xm, yn+1...ym),
+    Sur_case(cible, xc, yc),
+    Sur_case(corde_de_piano, xr, yr),
+    Sur_case(costume, xs, ys),
+    Sur_case(garde, x4..xn, y4..yn),
+    Sur_case(civil, xn+1..xm, yn+1..ym)
 )
-```
 
-```
-Goal (
+Goal(
     Position(Hitman, 0, 0),
     Possède(corde_de_piano),
-    ¬Sur_case(cible, x, y),
-    ¬Sur_case(corde_de_piano, x2, y2)
+    ¬Sur_case(cible, xc, yc),
+    ¬Sur_case(corde_de_piano, xr, yr)
 )
 ```
 
-##### Actions :
+### Exemples d'actions
+
 ```
-* Action(tourner_horaire, 
-PRECOND: Orientation(actuelle) = nord, 
-EFFECT: Orientation(est) )
+Action(tourner_horaire,
+    PRECOND: Orientation(nord),   EFFECT: Orientation(est))
 
-* Action(tourner_horaire, 
-PRECOND: Orientation(actuelle) = est, 
-EFFECT: Orientation(sud) )
+Action(avancer(x, y → x+1, y),
+    PRECOND: Orientation(nord) ∧ Avance_possible(x+1, y),
+    EFFECT:  Position(Hitman, x+1, y) ∧ ¬Position(Hitman, x, y))
 
-* Action(tourner_horaire, 
-PRECOND: Orientation(actuelle) = sud, 
-EFFECT: Orientation(ouest) )
+Action(tuer_cible(x, y),
+    PRECOND: Position(Hitman, x, y) ∧ Sur_case(cible, x, y) ∧ Possède(corde_de_piano),
+    EFFECT:  ¬Sur_case(cible, x, y))
 
-* Action(tourner_horaire, 
-PRECOND: Orientation(actuelle) = ouest, 
-EFFECT: Orientation(nord) )
+Action(prendre_corde(x, y),
+    PRECOND: Position(Hitman, x, y) ∧ Sur_case(corde_de_piano, x, y),
+    EFFECT:  Possède(corde_de_piano) ∧ ¬Sur_case(corde_de_piano, x, y))
 
-* Action(tourner_antihoraire, 
-PRECOND: Orientation(actuelle) = nord, 
-EFFECT: Orientation(ouest) )
-
-* Action(tourner_antihoraire, 
-PRECOND: Orientation(actuelle) = ouest, 
-EFFECT: Orientation(sud) )
-
-* Action(tourner_antihoraire, 
-PRECOND: Orientation(actuelle) = sud, 
-EFFECT: Orientation(est))
-
-* Action(tourner_antihoraire, 
-PRECOND: Orientation(actuelle) = est, 
-EFFECT: Orientation(nord) )
-
-* Action(avancer(x, y, x+1, y), 
-PRECOND: Orientation(actuelle) = nord ∧ Avance_possible(x+1, y), 
-EFFECT: Position(Hitman, x+1, y), ¬Position(Hitman, x, y) )
-
-* Action(avancer(x, y, x-1, y), 
-PRECOND: Orientation(actuelle) = sud ∧ Avance_possible(x-1, y), 
-EFFECT: Position(Hitman, x-1, y), ¬Position(Hitman, x, y) )
-
-* Action(avancer(x, y, x, y+1), 
-PRECOND: Orientation(actuelle) = est ∧ Avance_possible(x, y+1), 
-EFFECT: Position(Hitman, x, y+1), ¬Position(Hitman, x, y) )
-
-* Action(avancer(x, y, x, y-1), 
-PRECOND: Orientation(actuelle) = ouest ∧ Avance_possible(x, y-1), 
-EFFECT: Position(Hitman, x, y-1), ¬Position(Hitman, x, y) )
-
-* Action(tuer_cible(Hitman, cible, x,y),
-PRECOND: Position(Hitman, x, y) ∧ Sur_case(cible, x, y) ∧ Possède(corde_de_piano),
-EFFECT: ¬Sur_case(cible, x, y), ¬Position(Hitman, x, y) )
-
-* Action(neutraliser_garde(Hitman, Garde, x, y, x+1, y), 
-PRECOND: Position(Hitman, x, y) ∧ Sur_case(Garde, x+1, y) ∧ Regarde(Hitman, garde),
-∧ Orientation(actuelle) = nord ∧ regarde(garde, cible),
-EFFECT: ¬Sur_case(Garde, x, y), ¬regarde(garde, cible))
-
-* Action(neutraliser_garde(Hitman, Garde, x, y, x-1, y),
-PRECOND: Position(Hitman, x, y) ∧ Sur_case(Garde, x-1, y) ∧ Regarde(Hitman, garde)
-∧ Orientation(actuelle) = sud, 
-EFFECT: ¬Sur_case(Garde, x, y), ¬regarde(garde, cible))
-
-* Action(neutraliser_garde(Hitman, Garde, x, y, x, y+1),
-PRECOND: Position(Hitman, x, y) ∧ Sur_case(Garde, x, y+1) ∧ Regarde(Hitman, garde)
-∧ Orientation(actuelle) = est ∧ regarde(garde, cible),
-EFFECT: ¬Sur_case(Garde, x, y))
-
-* Action(neutraliser_garde(Hitman, Garde, x, y, x, y-1),
-PRECOND: Position(Hitman, x, y) ∧ Sur_case(Garde, x, y-1) ∧ Regarde(Hitman, garde)
-∧ Orientation(actuelle) = ouest ∧ regarde(garde, cible)
-EFFECT: ¬Sur_case(Garde, x, y), ¬regarde(garde, cible))
-
-
-* Action(neutraliser_civil(Hitman, Civil, x, y, x+1, y), 
-PRECOND: Position(Hitman, x, y) ∧ Sur_case(Civil, x+1, y) ∧ Regarde(Hitman, civil)
-∧ Orientation(actuelle) = nord ∧ regarde(garde, cible),
-EFFECT: ¬Sur_case(Civil, x, y), ¬regarde(garde, cible))
-
-* Action(neutraliser_civil(Hitman, Civil, x, y, x-1, y),
-PRECOND: Position(Hitman, x, y) ∧ Sur_case(Civil, x-1, y) ∧ Regarde(Hitman, civil)
-∧ Orientation(actuelle) = sud,
-EFFECT: ¬Sur_case(Civil, x, y))
-
-* Action(neutraliser_civil(Hitman, Civil, x, y, x, y+1),
-PRECOND: Position(Hitman, x, y) ∧ Sur_case(Civil, x, y+1) ∧ Regarde(Hitman, civil)
-∧ Orientation(actuelle) = est,
-EFFECT: ¬Sur_case(Civil, x, y))
-
-* Action(neutraliser_civil(Hitman, Civil, x, y, x, y-1),
-PRECOND: Position(Hitman, x, y) ∧ Sur_case(Civil, x, y-1) ∧ Regarde(Hitman, civil)
-∧ Orientation(actuelle) = ouest,
-EFFECT: ¬Sur_case(Civil, x, y))
-
-
-* Action(prendre_corde(Hitman, corde_de_piano, x, y), 
-PRECOND: Position(Hitman, x, y) ∧ Sur_case(corde_de_piano, x, y), 
-EFFECT: Possède(corde_de_piano) ∧ ¬Sur_case(corde_de_piano, x, y))
-
-
-* Action(prendre_costume(Hitman, costume, x, y), 
-PRECOND: Position(Hitman, x, y) ∧ Sur_case(costume, x, y), 
-EFFECT: Possède(costume) ∧ ¬Sur_case(costume, x, y) )
+Action(prendre_costume(x, y),
+    PRECOND: Position(Hitman, x, y) ∧ Sur_case(costume, x, y),
+    EFFECT:  Possède(costume) ∧ ¬Sur_case(costume, x, y))
 ```
 
-## Avantages et inconvénients de notre programme
+<br/>
 
-#### Avantages
-Le nombre de rotations est optimisé afin de faire le nombre minimum de rotations pour se tourner vers la case où on veut aller.
+## ✅ Avantages et ⚠️ Limites
 
-##### Phase 1 :
-La modélisation SAT permet d'être opérationnelle même sur des maps plus grande que la map actuelle (des maps de taille 10·10 par exemple).
+### Avantages
 
-Pour le choix du déplacement, on prend en compte le coût du regard des gardes. 
-On cherche la case inconnue la plus proche et on s'approche de cette case jusqu'à la voir. On ne va donc pas forcément jusqu'à aller sur cette case. 
-Une fois qu'on la voit, on recherche l'autre case inconnue la plus proche. Cette méthode permet de réduire les coûts, car une fois qu'on connaît la case, on n'essaye pas d'aller dessus.
+- **Modélisation SAT évolutive** : fonctionne sur des cartes bien plus grandes que la map de référence (testé jusqu'à 10×10).
+- **Optimisation des rotations** : `best_turn` minimise systématiquement le nombre de tours effectués.
+- **Prise en compte des regards** : le coût A\* intègre les zones de vision des gardes identifiés.
+- **Exploration efficace** : l'agent s'approche d'une case jusqu'à la voir, sans forcément s'y rendre, réduisant le coût global.
+- **Simulation multi-chemins** (Phase 2) : le chemin optimal est choisi parmi plusieurs candidats avec calcul complet du coût.
 
-##### Phase 2 : 
-On fait des simulations avec différents chemins pour savoir celui qui est le moins coûteux. Les coûts pris en compte sont : 
-* les coûts de déplacements
-* les coûts des rotations
-* le nombre de fois qu'on est vu par un garde
-* les coûts liés au costume (si on le prend)
-* les coûts liés au meurtre de la cible
-* les coûts liés au meurtre d'un garde ou d'une cible
+### Limites
 
+- **Exploration locale** (Phase 1) : la préférence de case la plus proche peut amener l'agent à repasser plusieurs fois sur la même zone selon la topologie de la carte.
+- **Chemins candidats fixes** (Phase 2) : seul un nombre limité de chemins est simulé ; une recherche exhaustive pourrait trouver des solutions encore moins coûteuses.
 
-On neutralise des civils ou invités s'ils regardent la cible. Cela permet de réduire considérablement le coût lorsqu'on tue la cible.
+<br/>
 
+## 🛠 Exécution
 
-#### Inconvénients
-##### Phase 1 : 
-Pour se déplacer, on cherche la case inconnue la plus proche. 
-Cependant, on cherche la case la plus proche avec une certaine préférence. 
-Ce qui amène des fois à passer plusieurs fois sur une même case selon la configuration de la map. 
+### Prérequis
 
-##### Phase 2 :
-Ne fait des simulations qu'avec quelques chemins. 
-Lorsqu'une action est faite le chemin n'est pas recalculé. 
-Ce recalcule de chemin pourrait permettre de trouver un meilleur trajet.
+- **Python 3.8+**
+- Exécutable **`gophersat`** placé à la racine du projet, avec les droits d'exécution
+
+```bash
+# Linux / macOS — rendre gophersat exécutable
+chmod +x gophersat
+```
+
+Téléchargement : [gophersat sur GitHub](https://github.com/crillab/gophersat/releases)
+
+### Lancement
+
+```bash
+python main.py
+```
+
+Le programme demandera si vous souhaitez activer le solveur SAT pour la Phase 1 :
+
+```
+Voulez-vous utiliser SAT ? (y/n)
+```
+
+- `y` — Phase 1 avec déductions SAT (recommandé)
+- `n` — Phase 1 sans SAT (exploration naïve)
+
+La Phase 2 s'exécute automatiquement à la suite.
+
+<br/>
+
+## 🧰 Technologies utilisées
+
+- **Python 3** — langage principal
+- **gophersat** — solveur SAT en CNF ([crillab/gophersat](https://github.com/crillab/gophersat))
+- **A\*** — algorithme de recherche de chemin avec heuristique de Manhattan
+
+<br/>
+
+## 📄 Licence
+
+Ce projet est distribué sous licence **MIT** — voir le fichier [LICENSE](LICENSE) pour plus d'informations.
+
+<br/>
+
+## 👤 Auteurs
+
+- **Lucas**
+- **[@sacha-sz](https://github.com/sacha-sz)**
+
+<br/>
+
+## 🔗 Références
+
+- [🔒 Cours IA02 sur Moodle (accès UTC requis)](https://moodle.utc.fr/enrol/index.php?id=1031)
+- [UTC — Université de Technologie de Compiègne](https://www.utc.fr/)
+- [gophersat — solveur SAT (CRIL)](https://github.com/crillab/gophersat)
