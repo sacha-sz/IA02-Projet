@@ -4,7 +4,7 @@ Ce dépôt contient le code source réalisé dans le cadre du projet de l'UV **I
 
 L'agent **Hitman** évolue dans une carte 2D qu'il ne connaît pas initialement. Il doit l'**explorer**, **déduire** la position des gardes et civils grâce à un solveur SAT, puis **éliminer la cible** en minimisant son score de pénalité.
 
-Projet réalisé en **Python** — Binôme n°22 : **Lucas & Sacha**.
+Projet réalisé en **Python** - Binôme n°22 : **Lucas & Sacha**.
 
 <br/>
 
@@ -21,7 +21,7 @@ Projet réalisé en **Python** — Binôme n°22 : **Lucas & Sacha**.
 
 | Fichier | Rôle |
 |---------|------|
-| [`main.py`](main.py) | Point d'entrée — lance les deux phases et affiche les scores |
+| [`main.py`](main.py) | Point d'entrée - lance les deux phases et affiche les scores |
 | [`agent_hitman.py`](agent_hitman.py) | Contrôleur principal de l'agent : déplacements, A\*, appels SAT, stratégie Phase 2 |
 | [`gophersat.py`](gophersat.py) | Interface avec le solveur SAT : gestion des clauses, encodage, déduction |
 | [`hitman.py`](hitman.py) | Arbitre du jeu fourni (`HitmanReferee`) et définition des types de cases |
@@ -29,7 +29,7 @@ Projet réalisé en **Python** — Binôme n°22 : **Lucas & Sacha**.
 
 <br/>
 
-## 🔍 Phase 1 — Exploration par déduction SAT
+## 🔍 Phase 1 - Exploration par déduction SAT
 
 Hitman explore la carte en cherchant à chaque étape la **case inconnue la plus proche**. Le chemin vers cette case est calculé par **A\***, en tenant compte des regards des gardes déjà découverts et du coût des déplacements.
 
@@ -67,7 +67,7 @@ Plutôt que d'encoder dès le départ toutes les combinaisons possibles sur la c
 
 <br/>
 
-## 🗡 Phase 2 — Planification de l'élimination
+## 🗡 Phase 2 - Planification de l'élimination
 
 L'agent connaît désormais la carte complète. Il simule **trois chemins candidats** et choisit le moins coûteux :
 
@@ -172,7 +172,7 @@ Action(prendre_costume(x, y),
 - Exécutable **`gophersat`** placé à la racine du projet, avec les droits d'exécution
 
 ```bash
-# Linux / macOS — rendre gophersat exécutable
+# Linux / macOS - rendre gophersat exécutable
 chmod +x gophersat
 ```
 
@@ -190,8 +190,8 @@ Le programme demandera si vous souhaitez activer le solveur SAT pour la Phase 1 
 Voulez-vous utiliser SAT ? (y/n)
 ```
 
-- `y` — Phase 1 avec déductions SAT (recommandé)
-- `n` — Phase 1 sans SAT (exploration naïve)
+- `y` - Phase 1 avec déductions SAT (recommandé)
+- `n` - Phase 1 sans SAT (exploration naïve)
 
 La Phase 2 s'exécute automatiquement à la suite.
 
@@ -199,15 +199,15 @@ La Phase 2 s'exécute automatiquement à la suite.
 
 ## 🧰 Technologies utilisées
 
-- **Python 3** — langage principal
-- **gophersat** — solveur SAT en CNF ([crillab/gophersat](https://github.com/crillab/gophersat))
-- **A\*** — algorithme de recherche de chemin avec heuristique de Manhattan
+- **Python 3** - langage principal
+- **gophersat** - solveur SAT en CNF ([crillab/gophersat](https://github.com/crillab/gophersat))
+- **A\*** - algorithme de recherche de chemin avec heuristique de Manhattan
 
 <br/>
 
 ## 📄 Licence
 
-Ce projet est distribué sous licence **MIT** — voir le fichier [LICENSE](LICENSE) pour plus d'informations.
+Ce projet est distribué sous licence **MIT** - voir le fichier [LICENSE](LICENSE) pour plus d'informations.
 
 <br/>
 
@@ -221,5 +221,5 @@ Ce projet est distribué sous licence **MIT** — voir le fichier [LICENSE](LICE
 ## 🔗 Références
 
 - [🔒 Cours IA02 sur Moodle (accès UTC requis)](https://moodle.utc.fr/enrol/index.php?id=1031)
-- [UTC — Université de Technologie de Compiègne](https://www.utc.fr/)
-- [gophersat — solveur SAT (CRIL)](https://github.com/crillab/gophersat)
+- [UTC - Université de Technologie de Compiègne](https://www.utc.fr/)
+- [gophersat - solveur SAT (CRIL)](https://github.com/crillab/gophersat)
